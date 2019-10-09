@@ -14,3 +14,6 @@ cuales se encargarán de:
 * Añadir gastos y pagos a un grupo.
 * Redistribuir la deuda en un grupo.
 * Notificar periódicamente a los usuarios sobre la deuda pendiente.
+
+Para más información y documentación adicional de los hitos, visite la 
+[página web del proyecto](https://varrrro.github.io/pay-up).
