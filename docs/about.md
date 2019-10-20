@@ -41,3 +41,24 @@ siguiente funcionalidad:
 * Añadir un pago.
 * Eliminar el último gasto.
 * Eliminar el último pago.
+
+# Arquitectura
+
+Las funcionalidades que hemos mencionado requieren de una respuesta por parte del cliente
+que las solicita, por lo que descartamos para nuestro sistema una arquitectura de paso de
+mensajes. Vamos a optar entonces por una arquitectura basada en microservicios, con uno para
+cada entidad descrita anteriormente.
+
+Para tener un único punto de acceso a nuestro sistema por parte de los clientes, se usará
+un API *Gateway* basado en REST, el cual redirigirá las solicitudes a los microservicios, que
+implementarán también interfaces REST.
+
+![Diagrama de arquitectura del sistema](/pay-up/assets/images/architecture-diagram.png)
+
+La implementación de los microservicios y del API *Gateway* se va a realizar con el lenguaje
+Go y haciendo uso de [Go kit](https://gokit.io/) y el [Gorilla web toolkit](https://www.gorillatoolkit.org/).
+
+Necesitaremos también un sistema de configuración remota, para lo que usaremos
+[etcd](https://etcd.io/), además de un sistema de logs unificado. Haremos uso de
+[Consul](https://www.consul.io/) para el descubrimiento de servicios. Para la persistencia
+de datos, utilizaremos bases de datos [PostgreSQL](https://www.postgresql.org/).
