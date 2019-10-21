@@ -50,7 +50,8 @@ cada entidad descrita anteriormente.
 
 Para tener un único punto de acceso a nuestro sistema por parte de los clientes, se usará
 un API *Gateway* basado en REST, el cual redirigirá las solicitudes a los microservicios, que
-implementarán también interfaces REST.
+implementarán también interfaces REST. La comunicación entre los distintos componentes se
+realizará con el protocolo HTTP/TCP, usando JSON como formato de transmisión de datos.
 
 ![Diagrama de arquitectura del sistema](/docs/assets/images/architecture-diagram.png)
 
@@ -58,6 +59,6 @@ La implementación de los microservicios y del API *Gateway* se va a realizar co
 Go y haciendo uso de [Go kit](https://gokit.io/) y el [Gorilla web toolkit](https://www.gorillatoolkit.org/).
 
 Necesitaremos también un sistema de configuración remota, para lo que usaremos
-[etcd](https://etcd.io/), además de un sistema de logs unificado. Haremos uso de
-[Consul](https://www.consul.io/) para el descubrimiento de servicios. Para la persistencia
-de datos, utilizaremos bases de datos [PostgreSQL](https://www.postgresql.org/).
+[Zookeeper](https://zookeeper.apache.org/), además de un sistema de logs unificado. Para la
+persistencia de datos, utilizaremos bases de datos [PostgreSQL](https://www.postgresql.org/),
+mientras que [Memcached](https://memcached.org/) nos servirá como caché de acceso rápido.
