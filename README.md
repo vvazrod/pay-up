@@ -59,6 +59,7 @@ La implementación de los microservicios y del API *Gateway* se va a realizar co
 Go y haciendo uso de [Go kit](https://gokit.io/) y el [Gorilla web toolkit](https://www.gorillatoolkit.org/).
 
 Necesitaremos también un sistema de configuración remota, para lo que usaremos
-[Zookeeper](https://zookeeper.apache.org/), además de un sistema de logs unificado. Para la
-persistencia de datos, utilizaremos bases de datos [PostgreSQL](https://www.postgresql.org/),
-mientras que [Memcached](https://memcached.org/) nos servirá como caché de acceso rápido.
+[Zookeeper](https://zookeeper.apache.org/). Para la persistencia de datos, utilizaremos
+bases de datos [PostgreSQL](https://www.postgresql.org/), mientras que [Memcached](https://memcached.org/)
+nos servirá como caché de acceso rápido. Los logs producidos por cada parte del sistema deben
+ser centralizados, tarea para la cual haremos uso de [Graylog](https://www.graylog.org/).
