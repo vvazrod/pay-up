@@ -10,7 +10,7 @@ automática.
 A continuación, se van a presentar las entidades que componen el sistema, sus
 funcionalidades y el diseño de la arquitectura usada.
 
-# Grupos
+## Grupos
 
 Un grupo está compuesto por una serie de integrantes, los cuales poseen un balance
 dentro del mismo. Este balance se altera cada vez que se añade un gasto o un pago en
@@ -25,7 +25,7 @@ funcionalidad:
 * Eliminar integrantes de un grupo.
 * Calcular la deuda en el grupo.
 
-# Gastos/Pagos
+## Gastos/Pagos
 
 A un grupo se pueden añadir gastos realizados por alguno de sus integrantes para los
 demás miembros del grupo. Esto hace que se recalcule el balance de todos los integrantes.
@@ -41,7 +41,7 @@ siguiente funcionalidad:
 * Eliminar el último gasto.
 * Eliminar el último pago.
 
-# Arquitectura
+## Arquitectura
 
 Las funcionalidades que hemos mencionado requieren de una respuesta por parte del cliente
 que las solicita, por lo que descartamos para nuestro sistema una arquitectura de paso de
@@ -54,6 +54,8 @@ implementarán también interfaces REST. La comunicación entre los distintos co
 realizará con el protocolo HTTP/TCP, usando JSON como formato de transmisión de datos.
 
 ![Diagrama de arquitectura del sistema](/pay-up/assets/images/architecture-diagram.png)
+
+Como se puede ver en la imagen, usamos una cola de mensajes [RabbitMQ](https://www.rabbitmq.com/) para comunicar las peticiones al microservicio de gastos/pagos. Esto se debe a que el orden en el que se procesen estas peticiones es importante para asegurar que el cálculo de los balances es el correcto.
 
 La implementación de los microservicios y del API *Gateway* se va a realizar con el lenguaje
 Go y haciendo uso de [Go kit](https://gokit.io/) y el [Gorilla web toolkit](https://www.gorillatoolkit.org/).
