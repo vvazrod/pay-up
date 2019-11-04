@@ -1,6 +1,6 @@
 # PayUp
 
-La arquitectura del sistema definida en el hito anterior se puede encontrar en [este *post*](https://varrrro.github.io/pay-up/2019/10/28/system-architecture.html). Aunque ahí ya indicamos algunas de las herramientas que íbamos a utilizar, a continuación vamos a describirlas en mayor profundidad.
+La arquitectura del sistema definida anteriormente se puede encontrar en [este *post*](https://varrrro.github.io/pay-up/2019/10/28/system-architecture.html). Aunque ahí ya indicamos algunas de las herramientas que íbamos a utilizar, a continuación vamos a describirlas en mayor profundidad.
 
 Para la implementación de los microservicios de las distintas entidades y del API Gateway, usaremos el *toolkit* [Go-kit](https://github.com/go-kit/kit).
 
