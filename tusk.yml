@@ -1,0 +1,12 @@
+tasks:
+  install:
+    usage: Install project dependencies
+    run: go mod install
+  
+  test:
+    usage: Run tests and generate coverage report
+    run: go test ./internal/... -coverprofile cov.out
+
+  coverage:
+    usage: Send coverage report to codecov.io
+    run: bash <(curl -s https://codecov.io/bash)
