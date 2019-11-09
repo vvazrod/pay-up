@@ -1,7 +1,7 @@
 tasks:
   install:
     usage: Install project dependencies
-    run: go mod install
+    run: go mod download
   
   test:
     usage: Run tests and generate coverage report
