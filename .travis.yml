@@ -3,12 +3,16 @@ language: go
 go:
   - 1.13.x
 
+before_install:
+  - go get -u -d github.com/magefile/mage
+  - cd $GOPATH/src/github.com/magefile/mage
+  - go run bootstrap.go
+
 install:
-  - curl -sL https://taskfile.dev/install.sh | sh
-  - go mod download
+  - mage install
 
 script:
-  - task test
+  - mage test
 
 after_success:
-  - task coverage
+  - mage coverage
