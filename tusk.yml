@@ -5,7 +5,7 @@ tasks:
   
   test:
     usage: Run tests and generate coverage report
-    run: go test ./internal/... -coverprofile cov.out
+    run: go test ./internal/... -coverprofile coverage.txt
 
   coverage:
     usage: Send coverage report to codecov.io
