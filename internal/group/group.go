@@ -45,3 +45,31 @@ func (g *Group) AddMembers(members []string) error {
 
 	return nil
 }
+
+// DeleteMember from the given group.
+func (g *Group) DeleteMember(member string) error {
+	if b, prs := g.Members[member]; !prs {
+		return &MembersNotFoundError{g.ID, []string{member}}
+	} else if b != 0.0 {
+		return &DeletingBalanceError{g.ID, []string{member}}
+	}
+
+	delete(g.Members, member)
+
+	return nil
+}
+
+// DeleteMembers from the given group.
+func (g *Group) DeleteMembers(members []string) error {
+	for _, m := range members {
+		if b, prs := g.Members[m]; !prs {
+			return &MembersNotFoundError{g.ID, []string{m}}
+		} else if b != 0.0 {
+			return &DeletingBalanceError{g.ID, []string{m}}
+		}
+
+		delete(g.Members, m)
+	}
+
+	return nil
+}
