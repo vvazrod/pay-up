@@ -1,8 +1,7 @@
 ---
 layout: home
+title: PayUp - Gestión de pagos sencilla
 ---
-
-# PayUp: Gestión de pagos sencilla
 
 [![Build Status](https://travis-ci.com/Varrrro/pay-up.svg?branch=master)](https://travis-ci.com/Varrrro/pay-up)
 [![codecov](https://codecov.io/gh/Varrrro/pay-up/branch/master/graph/badge.svg)](https://codecov.io/gh/Varrrro/pay-up)
