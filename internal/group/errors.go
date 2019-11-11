@@ -31,3 +31,16 @@ type MembersNotFoundError struct {
 func (e *MembersNotFoundError) Error() string {
 	return fmt.Sprintf("The following members are not present in the group (%d): %v", e.GroupID, e.Members)
 }
+
+// A DeleteMembersError is used to combine DeletingBalanceError and MembersNotFoundError.
+type DeleteMembersError struct {
+	GroupID         int
+	NotFoundMembers []string
+	BalanceMembers  []string
+}
+
+func (e *DeleteMembersError) Error() string {
+	return fmt.Sprintf("Couldn't delete some members from the group (%d), reason:\n"+
+		"The following members are not present: %v\n"+
+		"The following members have a non zero balance: %v", e.GroupID, e.NotFoundMembers, e.BalanceMembers)
+}

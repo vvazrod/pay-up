@@ -61,14 +61,26 @@ func (g *Group) DeleteMember(member string) error {
 
 // DeleteMembers from the given group.
 func (g *Group) DeleteMembers(members []string) error {
+	var notFound, balance []string
+
 	for _, m := range members {
 		if b, prs := g.Members[m]; !prs {
-			return &MembersNotFoundError{g.ID, []string{m}}
+			notFound = append(notFound, m)
+			continue
 		} else if b != 0.0 {
-			return &DeletingBalanceError{g.ID, []string{m}}
+			balance = append(balance, m)
+			continue
 		}
 
 		delete(g.Members, m)
+	}
+
+	if len(notFound) > 0 && len(balance) > 0 {
+		return &DeleteMembersError{g.ID, notFound, balance}
+	} else if len(notFound) > 0 {
+		return &MembersNotFoundError{g.ID, notFound}
+	} else if len(balance) > 0 {
+		return &DeletingBalanceError{g.ID, balance}
 	}
 
 	return nil
