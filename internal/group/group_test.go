@@ -1,14 +1,16 @@
-package group
+package group_test
 
 import (
 	"os"
 	"testing"
+
+	"github.com/varrrro/pay-up/internal/group"
 )
 
-var testGroup *Group
+var testGroup *group.Group
 
 func TestMain(m *testing.M) {
-	testGroup = &Group{
+	testGroup = &group.Group{
 		Name: "Test Group",
 		Members: map[string]float32{
 			"Test1": 0.0,
@@ -21,7 +23,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestNew(t *testing.T) {
-	g := New("Test")
+	g := group.New("Test")
 
 	if g.Name != "Test" {
 		t.Error("Group created without the given name.")
@@ -53,8 +55,6 @@ func TestAddExistingMember(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("Adding duplicate member didn't return an error.")
-	} else {
-		t.Log(err.Error())
 	}
 
 	if len(testGroup.Members) > startLen {
@@ -81,8 +81,6 @@ func TestDeleteMemberNotFound(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("Deleting a non-existing member didn't return an error.")
-	} else {
-		t.Log(err.Error())
 	}
 }
 
@@ -91,8 +89,5 @@ func TestDeleteMemberWithBalance(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("Deleting a member with non-zero balance didn't return an error.")
-	} else {
-		t.Log(err.Error())
 	}
-
 }
