@@ -1,8 +1,11 @@
 package group
 
-import "github.com/google/uuid"
+import (
+	"errors"
 
-import "errors"
+	"github.com/google/uuid"
+	"github.com/varrrro/pay-up/internal/member"
+)
 
 var (
 	errExistingMember = errors.New("member already present in the group")
@@ -14,7 +17,7 @@ var (
 type Group struct {
 	ID      uuid.UUID
 	Name    string
-	Members map[string]float32
+	Members []member.Member
 }
 
 // New Group instance.
@@ -22,30 +25,48 @@ func New(name string) *Group {
 	return &Group{
 		ID:      uuid.New(),
 		Name:    name,
-		Members: make(map[string]float32),
+		Members: []member.Member{},
 	}
 }
 
-// AddMember to a group.
-func (g *Group) AddMember(member string) error {
-	if _, prs := g.Members[member]; prs {
-		return errExistingMember
+// GetMember with the given name.
+func (g *Group) GetMember(name string) (member.Member, error) {
+	for _, m := range g.Members {
+		if m.Name == name {
+			return m, nil
+		}
 	}
 
-	g.Members[member] = 0.0
+	return member.Member{}, errMemberNotFound
+}
+
+// AddMember to a group.
+func (g *Group) AddMember(name string) error {
+	for _, m := range g.Members {
+		if m.Name == name {
+			return errExistingMember
+		}
+	}
+
+	g.Members = append(g.Members, *member.New(name))
 
 	return nil
 }
 
 // DeleteMember from a group.
-func (g *Group) DeleteMember(member string) error {
-	if balance, prs := g.Members[member]; !prs {
-		return errMemberNotFound
-	} else if balance != 0.0 {
-		return errDeleteBalance
+func (g *Group) DeleteMember(name string) error {
+	for i, m := range g.Members {
+		if m.Name == name {
+			if m.Balance != 0.0 {
+				return errDeleteBalance
+			}
+
+			g.Members[i] = g.Members[len(g.Members)-1]
+			g.Members = g.Members[:len(g.Members)-1]
+
+			return nil
+		}
 	}
 
-	delete(g.Members, member)
-
-	return nil
+	return errMemberNotFound
 }
