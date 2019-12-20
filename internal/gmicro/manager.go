@@ -62,7 +62,9 @@ func (gm *GroupsManager) AddMember(groupid uuid.UUID, name string) error {
 	var g group.Group
 
 	gm.DB.First(&g, "id = ?", groupid)
-	g.AddMember(name)
+
+	m := member.New(name)
+	g.AddMember(m)
 	gm.DB.Save(&g)
 
 	return nil

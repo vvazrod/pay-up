@@ -3,7 +3,7 @@ package member_test
 import (
 	"testing"
 
-	"github.com/varrrro/pay-up/internal/member"
+	"github.com/varrrro/pay-up/internal/gmicro/member"
 )
 
 func TestNew(t *testing.T) {
