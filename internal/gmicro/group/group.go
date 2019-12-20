@@ -15,9 +15,9 @@ var (
 
 // Group of people, each of which has a balance in the group.
 type Group struct {
-	ID      uuid.UUID
-	Name    string
-	Members []member.Member
+	ID      uuid.UUID       `json:"id"`
+	Name    string          `json:"name"`
+	Members []member.Member `json:"members"`
 }
 
 // New Group instance.
