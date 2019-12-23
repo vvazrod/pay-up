@@ -18,23 +18,25 @@ func NewManager(db *gorm.DB) *GroupsManager {
 }
 
 // CreateGroup with the given name.
-func (gm *GroupsManager) CreateGroup(name string) error {
+func (gm *GroupsManager) CreateGroup(name string) (group.Group, error) {
 	g := group.New(name)
 
 	gm.DB.Create(g)
 
-	return nil
+	return *g, nil
 }
 
 // FetchGroup with the given ID.
-//
-// Returns an empty Group if none are found.
-func (gm *GroupsManager) FetchGroup(id uuid.UUID) group.Group {
+func (gm *GroupsManager) FetchGroup(id uuid.UUID) (group.Group, error) {
 	var g group.Group
 
-	gm.DB.First(&g, "id = ?", id)
+	gm.DB.Preload("Members").First(&g, "id = ?", id.String())
 
-	return g
+	if g.ID != id.String() {
+		return g, &NotFoundError{"No group found", id.String()}
+	}
+
+	return g, nil
 }
 
 // UpdateGroup with a new name.
@@ -42,58 +44,97 @@ func (gm *GroupsManager) UpdateGroup(id uuid.UUID, name string) error {
 	var g group.Group
 
 	gm.DB.First(&g, "id = ?", id)
-	gm.DB.Model(&g).Update("name", name)
+
+	if g.ID != id.String() {
+		return &NotFoundError{"No group found", id.String()}
+	}
+
+	g.Name = name
+	gm.DB.Save(&g)
 
 	return nil
 }
 
-// DeleteGroup with the given ID.
-func (gm *GroupsManager) DeleteGroup(id uuid.UUID) error {
+// RemoveGroup with the given ID.
+func (gm *GroupsManager) RemoveGroup(id uuid.UUID) error {
 	var g group.Group
 
 	gm.DB.First(&g, "id = ?", id)
+
+	if g.ID != id.String() {
+		return &NotFoundError{"No group found", id.String()}
+	}
+
 	gm.DB.Delete(&g)
 
 	return nil
 }
 
 // AddMember to the given group.
-func (gm *GroupsManager) AddMember(groupid uuid.UUID, name string) error {
+func (gm *GroupsManager) AddMember(groupid uuid.UUID, name string) (member.Member, error) {
 	var g group.Group
 
-	gm.DB.First(&g, "id = ?", groupid)
+	gm.DB.Preload("Members").First(&g, "id = ?", groupid)
+
+	if g.ID != groupid.String() {
+		return member.Member{}, &NotFoundError{"No group found", groupid.String()}
+	}
+
+	for _, m := range g.Members {
+		if m.Name == name {
+			return member.Member{}, &AlreadyPresentError{"Member already present in the group", groupid.String(), name}
+		}
+	}
 
 	m := member.New(name)
-	g.AddMember(m)
-	gm.DB.Save(&g)
+	gm.DB.Model(&g).Association("Members").Append(m)
 
-	return nil
+	return *m, nil
 }
 
 // FetchMember with the given ID and group ID.
-func (gm *GroupsManager) FetchMember(groupid, memberid uuid.UUID) member.Member {
+func (gm *GroupsManager) FetchMember(groupid, memberid uuid.UUID) (member.Member, error) {
 	var m member.Member
 
-	gm.DB.First(&m, "id = ? AND groupid = ?", memberid, groupid)
+	gm.DB.First(&m, "id = ? AND group_id = ?", memberid, groupid)
 
-	return m
+	if m.ID != memberid.String() {
+		return m, &NotFoundError{"No member found", memberid.String()}
+	}
+
+	return m, nil
 }
 
 // UpdateMember with a new name.
-func (gm *GroupsManager) UpdateMember(id uuid.UUID, name string) error {
+func (gm *GroupsManager) UpdateMember(groupid, memberid uuid.UUID, name string) error {
 	var m member.Member
 
-	gm.DB.First(&m, "id = ?", id)
-	gm.DB.Model(&m).Update("name", name)
+	gm.DB.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+
+	if m.ID != memberid.String() {
+		return &NotFoundError{"No member found", memberid.String()}
+	}
+
+	m.Name = name
+	gm.DB.Save(&m)
 
 	return nil
 }
 
-// DeleteMember with the given ID and group ID.
-func (gm *GroupsManager) DeleteMember(groupid, memberid uuid.UUID) error {
+// RemoveMember with the given ID and group ID.
+func (gm *GroupsManager) RemoveMember(groupid, memberid uuid.UUID) error {
 	var m member.Member
 
-	gm.DB.First(&m, "id = ? AND groupid = ?", memberid, groupid)
+	gm.DB.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+
+	if m.ID != memberid.String() {
+		return &NotFoundError{"No member found", memberid.String()}
+	}
+
+	if m.Balance != 0.0 {
+		return &BalanceError{"Can't delete member with balance", groupid.String(), memberid.String(), m.Balance}
+	}
+
 	gm.DB.Delete(&m)
 
 	return nil
