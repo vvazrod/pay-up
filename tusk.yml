@@ -10,3 +10,15 @@ tasks:
   coverage:
     usage: Send coverage report to codecov.io
     run: bash <(curl -s https://codecov.io/bash)
+
+  build:
+    usage: Compile the application
+    run: |
+      set -e
+      go build gmicro.go
+      mv gmicro /usr/local/bin/
+
+  run:
+    usage: Run the application
+    run: supervisord -c /etc/supervisor/conf.d/gmicro.conf
+      
