@@ -14,7 +14,7 @@ Una vez terminada la implementación del microservicio de grupos (al cuál he ll
 
 A continuación, vamos a explicar las distintas partes del `Dockerfile` del contenedor.
 
-```docker
+```dockerfile
 FROM golang:1.13-alpine3.10
 
 LABEL maintainer="Víctor Vázquez <victorvazrod@correo.ugr.es>"
@@ -24,7 +24,7 @@ WORKDIR /app
 
 Usaremos como imagen base la oficial de Go 1.13 hecha con Alpine. En la sección de comparación de imágenes se explica por qué se ha elegido esta en concreto. Definimos quien es el encargado de mantener la imagen y el directorio de trabajo dentro del contenedor, el cuál será `/app`.
 
-```docker
+```dockerfile
 RUN apk update \
     && apk add --no-cache supervisor \
     && apk add --no-cache --virtual .build-deps \
@@ -41,7 +41,7 @@ Luego, instalamos `git`, `curl` y `bash` haciendo uso de la opción `--virtual .
 
 Los paquetes de `.build-deps` los necesitamos solo para instalar `tusk`, la herramienta de construcción del proyecto, por lo que los eliminamos después de hacerlo haciendo uso del paquete virtual.
 
-```docker
+```dockerfile
 COPY tusk.yml go.mod go.sum ./
 
 RUN tusk install
@@ -49,7 +49,7 @@ RUN tusk install
 
 Copiamos tanto el archivo que define las distintas _tasks_ de `tusk` como los ficheros que especifican las dependencias del proyecto, las cuales se instalan con `tusk install`.
 
-```docker
+```dockerfile
 COPY cmd/gmicro/gmicro.go .
 COPY internal/gmicro/*.go internal/gmicro/
 COPY internal/gmicro/group/*.go internal/gmicro/group/
@@ -68,7 +68,7 @@ Esto ocurre con el paquete `net`, el cuál usamos para crear el servidor HTTP de
 
 Después de compilar el código, eliminamos todos los fuentes para reducir el tamaño de la imagen.
 
-```docker
+```dockerfile
 COPY init/gmicro.conf /etc/supervisor/conf.d/
 
 EXPOSE ${PORT}
@@ -82,7 +82,7 @@ Por último, copiamos el fichero de configuración del proceso que usará `super
 
 Como ya hemos indicado en la sección anterior, utilizamos `supervisord` para controlar el proceso. Esto nos permite automatizar su ejecución y relanzarlo si ocurre algún error. También genera ficheros de _log_ sobre la ejecución del mismo. El fichero `gmicro.conf` define la configuración de este proceso, que se puede ver a continuación:
 
-```conf
+```apacheconf
 [supervisord]
 nodaemon=true
 
@@ -128,7 +128,7 @@ Alpine también gana en rendimiento a las otras dos opciones. Es por ello que la
 
 Para comprobar el correcto funcionamiento del contenedor, se ha desplegado a Heroku siguiendo los pasos de [su guía](https://devcenter.heroku.com/articles/build-docker-images-heroku-yml). El fichero `heroku.yml` que define el despliegue es el siguiente:
 
-```yml
+```yaml
 build:
     docker:
         web: Dockerfile
