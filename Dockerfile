@@ -28,6 +28,11 @@ COPY internal/gmicro/*.go internal/gmicro/
 COPY internal/gmicro/group/*.go internal/gmicro/group/
 COPY internal/gmicro/member/*.go internal/gmicro/member/
 
+# Remove test files
+RUN rm -f /internal/gmicro/*_test.go \
+    /internal/gmicro/group/*_test.go \
+    /internal/gmicro/member/*_test.go
+
 # Disable CGO
 ENV CGO_ENABLED=0
 
