@@ -1,7 +1,9 @@
 FROM golang:1.13-alpine3.10
 
+# Set the maintainer of this image
 LABEL maintainer="Víctor Vázquez <victorvazrod@correo.ugr.es>"
 
+# Establish the working directory
 WORKDIR /app
 
 # Install supervisor and other build dependencies, clean up after the fact
@@ -35,11 +37,8 @@ RUN tusk build
 # Copy service supervisor config
 COPY init/gmicro.conf /etc/supervisor/conf.d/
 
+# Use the given port
 EXPOSE ${PORT}
 
-# Add non-root user used to run supervisord process
-RUN addgroup -S gmicro \
-    && adduser -S -G gmicro gmicro \
-    && chown gmicro:gmicro /app
-
+# Run the application
 CMD [ "tusk", "run" ]
