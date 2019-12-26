@@ -6,6 +6,12 @@
 
 > **Nota:** Puede encontrar toda la documentación en la [página web del proyecto](https://varrrro.github.io/pay-up/).
 
+## Herramienta de construcción
+
+Para gestionar las distintas tareas relativas al proyecto, usaremos [Tusk](https://github.com/rliebz/tusk) como herramienta de construcción. Las tareas que se han definido se encuentran en el siguiente archivo:
+
+> buildtool: tusk.yml
+
 ## Definición de la imagen Docker
 
 Una vez terminada la implementación del microservicio de grupos (al cuál he llamado `gmicro`), definimos una imagen Docker para poder desplegarlo como un contenedor en cualquier plataforma de manera sencilla. La imagen se puede encontrar en el siguiente enlace:
