@@ -6,6 +6,42 @@
 
 > **Nota:** Puede encontrar toda la documentación en la [página web del proyecto](https://varrrro.github.io/pay-up/).
 
+## Arquitectura de la aplicación
+
+La aplicación usa una arquitectura de microservicios, con dos que gestionan las dos partes principales del dominio del problema:
+
+* `gmicro`: Gestión de grupos y sus miembros. Tareas CRUD básicas sobre estos conjuntos.
+* `tmicro`: Gestión de las transacciones. Añadir pagos y gastos realizados en un grupo.
+
+El microservicio que se ha implementado hasta ahora es `gmicro`, del cuál vamos a hablar más en profuncidad a continuación:
+
+### Arquitectura del microservicio
+
+Se usa una arquitectura por capas, separando el modelo, la lógica de negocio y la gestión de las peticiones que recibe el microservicio. La implementación de esta arquitectura se puede ver en el siguiente diagrama:
+
+![Diagrama de arquitectura por capas de gmicro](docs/assets/images/layer-architecture.png)
+
+Vamos a repasar los componentes principales:
+
+* `router.go`: Define las rutas del microservicio que aceptan peticiones, así como el verbo HTTP necesario y la función _handler_ encargada de darle respuesta.
+* `handlers.go`: Define las funciones _handler_ que gestionan las peticiones a las distintas rutas. Todas ellas se encargan de decodificar la petición, llamar a la lógica de negocio y codificar la respuesta.
+* `manager.go`: Contiene la lógica de negocio y actúa como _single source of truth_ sobre el modelo de datos. Es el que realiza todas las operaciones sobre la conexión de base de datos que le es dada.
+* `group.go` y `member.go`: Constituyen el modelo de datos del microservicio. Usamos el ORM para crear las tablas de la base de datos a partir de los _struct_ definidos aquí.
+
+### Rutas de `gmicro`
+
+El microservicio `gmicro` presenta las siguientes rutas o _endpoints_ sobre los que se pueden realizar peticiones:
+
+* `GET /`: Devuelve un indicador del estado del microservicio. Útil para comprobar si está funcionando.
+* `POST /groups`: Crea un nuevo grupo. Debe enviar un nombre para el grupo como JSON en el cuerpo de la petición.
+* `GET /groups/{groupid}`: Devuelve un grupo concreto, identificado por el ID dado en la ruta de la petición.
+* `POST /groups/{groupid}`: Añade un nuevo miembro a un grupo concreto, identificado por el ID dado en la ruta de la petición. Debe enviar un nombre para el miembro como JSON en el cuerpo de la petición.
+* `PUT /groups/{groupid}`: Cambia el nombre de un grupo concreto, identificado por el ID dado en la ruta de la petición. Debe enviar un nuevo nombre para el grupo como JSON en el cuerpo de la petición.
+* `DELETE /groups/{groupid}`: Elimina un grupo, identificado por el ID dado en la ruta de la petición.
+* `GET /groups/{groupid}/members/{memberid}`: Devuelve un miembro de un grupo concreto, identificado por los IDs dados en la ruta de la petición.
+* `PUT /groups/{groupid}/members/{memberid}`: Cambia el nombre de un miembro concreto, identificado por los IDs dados en la ruta de la petición. Debe enviar un nuevo nombre para el miembro como JSON en el cuerpo de la petición.
+* `DELETE /groups/{groupid}/members/{memberid}`: Elimina un miembro de un grupo, identificado por los IDs dados en la ruta de la petición. El miembro no puede tener un balance distinto de cero para ser eliminado.
+
 ## Herramienta de construcción
 
 Para gestionar las distintas tareas relativas al proyecto, usaremos [Tusk](https://github.com/rliebz/tusk) como herramienta de construcción. Las tareas que se han definido se encuentran en el siguiente archivo:
@@ -17,6 +53,8 @@ Para gestionar las distintas tareas relativas al proyecto, usaremos [Tusk](https
 Una vez terminada la implementación del microservicio de grupos (al cuál he llamado `gmicro`), definimos una imagen Docker para poder desplegarlo como un contenedor en cualquier plataforma de manera sencilla. La imagen se puede encontrar en el siguiente enlace:
 
 > Contenedor: https://hub.docker.com/r/varrrro/pay-up
+> 
+> __NOTA:__ La construcción automática en _Docker Hub_ se realiza enlazando el repositorio de esa web con el de GitHub.
 
 A continuación, vamos a explicar las distintas partes del `Dockerfile` del contenedor.
 
