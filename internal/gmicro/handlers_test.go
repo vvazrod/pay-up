@@ -26,6 +26,10 @@ func TestGetStatus(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -53,6 +57,10 @@ func TestPostGroup(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusCreated {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -90,6 +98,10 @@ func TestPostGroupBadRequest(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -109,6 +121,10 @@ func TestGetGroup(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -142,6 +158,10 @@ func TestGetGroupNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusNotFound, r.StatusCode)
 	}
@@ -156,6 +176,10 @@ func TestGetGroupBadRequest(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusNotFound, r.StatusCode)
@@ -177,6 +201,10 @@ func TestPutGroup(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -202,6 +230,10 @@ func TestPutGroupNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -217,6 +249,10 @@ func TestPutGroupBadRequestID(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -235,6 +271,10 @@ func TestPutGroupBadRequestBody(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -255,6 +295,10 @@ func TestDeleteGroup(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusNoContent {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -277,6 +321,10 @@ func TestDeleteGroupNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -291,6 +339,10 @@ func TestDeleteGroupBadRequest(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -312,6 +364,10 @@ func TestPostMember(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -351,6 +407,10 @@ func TestPostMemberNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -377,6 +437,10 @@ func TestPostMemberConflict(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusConflict {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -392,6 +456,10 @@ func TestPostMemberBadRequestID(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -413,6 +481,10 @@ func TestPostMemberBadRequestBody(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -438,6 +510,10 @@ func TestGetMember(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -476,6 +552,10 @@ func TestGetMemberNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -493,6 +573,10 @@ func TestGetMemberBadRequestGroup(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -509,6 +593,10 @@ func TestGetMemberBadRequestMember(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -535,6 +623,10 @@ func TestPutMember(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusOK {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -565,6 +657,10 @@ func TestPutMemberNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -583,6 +679,10 @@ func TestPutMemberBadRequestGroupID(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -600,6 +700,10 @@ func TestPutMemberBadRequestMemberID(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -627,6 +731,10 @@ func TestPutMemberBadRequestBody(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -651,6 +759,10 @@ func TestDeleteMember(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusNoContent {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
@@ -678,6 +790,10 @@ func TestDeleteMemberNotFound(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusNotFound {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -695,6 +811,10 @@ func TestDeleteMemberBadRequestGroupID(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
 
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
+
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
 	}
@@ -711,6 +831,10 @@ func TestDeleteMemberBadRequestMemberID(t *testing.T) {
 
 	router.ServeHTTP(rec, req)
 	r := rec.Result()
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("Wrong mime-type [Expected]: application/json [Actual]: %s", r.Header.Get("Content-Type"))
+	}
 
 	if r.StatusCode != http.StatusBadRequest {
 		t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, r.StatusCode)
