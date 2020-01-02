@@ -10,8 +10,8 @@ import (
 type Payment struct {
 	ID        string    `json:"id" gorm:"type:uuid;primary_key"`
 	GroupID   string    `json:"group_id" gorm:"type:uuid"`
-	Amount    float32   `json:"amount"`
 	Date      time.Time `json:"date"`
+	Amount    float32   `json:"amount"`
 	Payer     string    `json:"payer" gorm:"type:uuid"`
 	Recipient string    `json:"recipient" gorm:"type:uuid"`
 }

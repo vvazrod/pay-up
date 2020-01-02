@@ -11,3 +11,14 @@ type NotFoundError struct {
 func (e *NotFoundError) Error() string {
 	return fmt.Sprintf("%s [Group ID]: %s", e.msg, e.id)
 }
+
+// UUIDParseError used when a string can't be parsed as a UUID.
+type UUIDParseError struct {
+	msg string
+	val string
+	err error
+}
+
+func (e *UUIDParseError) Error() string {
+	return fmt.Sprintf("%s [Value]: %s [Error]: %s", e.msg, e.val, e.err.Error())
+}

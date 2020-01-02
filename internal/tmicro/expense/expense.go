@@ -11,9 +11,9 @@ import (
 type Expense struct {
 	ID          string    `json:"id" gorm:"type:uuid;primary_key"`
 	GroupID     string    `json:"group_id" gorm:"type:uuid"`
-	Description string    `json:"description"`
-	Amount      float32   `json:"amount"`
 	Date        time.Time `json:"date"`
+	Amount      float32   `json:"amount"`
+	Description string    `json:"description"`
 	Payer       string    `json:"payer" gorm:"type:uuid"`
 	Recipients  string    `json:"recipients"`
 }
