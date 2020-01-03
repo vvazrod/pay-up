@@ -10,7 +10,7 @@ import (
 	"github.com/varrrro/pay-up/internal/tmicro/payment"
 )
 
-// NewMessageHandler using the given handler functions.
+// NewMessageHandler using a data manager and message publisher.
 func NewMessageHandler(m Manager, p *publisher.Publisher) func(*amqp.Delivery) {
 	return func(msg *amqp.Delivery) {
 		switch msg.Headers["operation"] {
