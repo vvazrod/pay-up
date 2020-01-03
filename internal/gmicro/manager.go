@@ -1,11 +1,29 @@
 package gmicro
 
 import (
+	"math"
+
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/varrrro/pay-up/internal/gmicro/group"
 	"github.com/varrrro/pay-up/internal/gmicro/member"
 )
+
+// Manager interface for the groups microservice.
+type Manager interface {
+	CreateGroup(name string) (group.Group, error)
+	FetchGroup(id uuid.UUID) (group.Group, error)
+	UpdateGroup(id uuid.UUID, name string) error
+	RemoveGroup(id uuid.UUID) error
+	AddMember(groupid uuid.UUID, name string) (member.Member, error)
+	FetchMember(groupid uuid.UUID, memberid uuid.UUID) (member.Member, error)
+	UpdateMember(groupid uuid.UUID, memberid uuid.UUID, name string) error
+	RemoveMember(groupid uuid.UUID, memberid uuid.UUID) error
+	AddExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error
+	RemoveExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error
+	AddPayment(amount float32, groupid, payerid, recipientid uuid.UUID) error
+	RemovePayment(amount float32, groupid, payerid, recipientid uuid.UUID) error
+}
 
 // GroupsManager that works as single source of truth.
 type GroupsManager struct {
@@ -136,6 +154,108 @@ func (gm *GroupsManager) RemoveMember(groupid, memberid uuid.UUID) error {
 	}
 
 	gm.DB.Delete(&m)
+
+	return nil
+}
+
+// AddExpense to a group, updating the balance of the members involved.
+func (gm *GroupsManager) AddExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error {
+	tx := gm.DB.Begin()
+
+	// Update payer's balance
+	if err := updateBalance(tx, groupid, payerid, amount); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update recipients' balances
+	recAmount := amount / float32(len(*recipients))
+	recAmount = float32(math.Floor(float64(recAmount*100))) / 100
+	for _, r := range *recipients {
+		if err := updateBalance(tx, groupid, r, -recAmount); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// RemoveExpense from a group, updating the balance of the members involved.
+func (gm *GroupsManager) RemoveExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error {
+	tx := gm.DB.Begin()
+
+	// Update payer's balance
+	if err := updateBalance(tx, groupid, payerid, -amount); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update recipients' balances
+	recAmount := amount / float32(len(*recipients))
+	recAmount = float32(math.Floor(float64(recAmount*100))) / 100
+	for _, r := range *recipients {
+		if err := updateBalance(tx, groupid, r, recAmount); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// AddPayment to a group, updating the balance of the members involved.
+func (gm *GroupsManager) AddPayment(amount float32, groupid, payerid, recipientid uuid.UUID) error {
+	tx := gm.DB.Begin()
+
+	// Update payer's balance
+	if err := updateBalance(tx, groupid, payerid, amount); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update recipient's balance
+	if err := updateBalance(tx, groupid, recipientid, -amount); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// RemovePayment from a group, updating the balance of the members involved.
+func (gm *GroupsManager) RemovePayment(amount float32, groupid, payerid, recipientid uuid.UUID) error {
+	tx := gm.DB.Begin()
+
+	// Update payer's balance
+	if err := updateBalance(tx, groupid, payerid, -amount); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// Update recipient's balance
+	if err := updateBalance(tx, groupid, recipientid, amount); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func updateBalance(tx *gorm.DB, groupid, memberid uuid.UUID, amount float32) error {
+	var m member.Member
+
+	tx.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+
+	if m.ID != memberid.String() {
+		return &NotFoundError{"No member found", memberid.String()}
+	}
+
+	tx.Model(&m).Update("balance", m.Balance+amount)
 
 	return nil
 }

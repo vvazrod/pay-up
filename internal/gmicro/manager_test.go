@@ -26,10 +26,10 @@ func TestMain(m *testing.M) {
 	manager = gmicro.NewManager(db)
 
 	// Build handlers with manager
-	h := gmicro.NewHandlers(manager)
+	httpHandlers := gmicro.NewHTTPHandlers(manager)
 
 	// Build router with handlers
-	router = gmicro.NewRouter(h)
+	router = gmicro.NewRouter(httpHandlers)
 
 	os.Exit(m.Run())
 }
@@ -242,5 +242,117 @@ func TestRemoveMemberNotFound(t *testing.T) {
 
 	if err == nil {
 		t.Error("Deleting non-existant member didn't return an error.")
+	}
+}
+
+func TestAddExpense(t *testing.T) {
+	g, _ := manager.CreateGroup("test")
+	m1, _ := manager.AddMember(uuid.MustParse(g.ID), "test1")
+	m2, _ := manager.AddMember(uuid.MustParse(g.ID), "test2")
+	m3, _ := manager.AddMember(uuid.MustParse(g.ID), "test3")
+
+	if err := manager.AddExpense(
+		23.3,
+		uuid.MustParse(g.ID),
+		uuid.MustParse(m1.ID),
+		&[]uuid.UUID{uuid.MustParse(m2.ID), uuid.MustParse(m3.ID)},
+	); err != nil {
+		t.Errorf("Couldn't update balances with new expense. Error: %s", err.Error())
+	}
+
+	m1, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m1.ID))
+	if m1.Balance != 23.3 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 23.3, m1.Balance)
+	}
+
+	m2, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m2.ID))
+	if m2.Balance != -11.65 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -11.65, m2.Balance)
+	}
+
+	m3, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m3.ID))
+	if m2.Balance != -11.65 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -11.65, m3.Balance)
+	}
+}
+
+func TestRemoveExpense(t *testing.T) {
+	g, _ := manager.CreateGroup("test")
+	m1, _ := manager.AddMember(uuid.MustParse(g.ID), "test1")
+	m2, _ := manager.AddMember(uuid.MustParse(g.ID), "test2")
+	m3, _ := manager.AddMember(uuid.MustParse(g.ID), "test3")
+
+	if err := manager.RemoveExpense(
+		23.3,
+		uuid.MustParse(g.ID),
+		uuid.MustParse(m1.ID),
+		&[]uuid.UUID{uuid.MustParse(m2.ID), uuid.MustParse(m3.ID)},
+	); err != nil {
+		t.Errorf("Couldn't update balances with new expense. Error: %s", err.Error())
+	}
+
+	m1, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m1.ID))
+	if m1.Balance != -23.3 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -23.3, m1.Balance)
+	}
+
+	m2, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m2.ID))
+	if m2.Balance != 11.65 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 11.65, m2.Balance)
+	}
+
+	m3, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m3.ID))
+	if m2.Balance != 11.65 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 11.65, m3.Balance)
+	}
+}
+
+func TestAddPayment(t *testing.T) {
+	g, _ := manager.CreateGroup("test")
+	m1, _ := manager.AddMember(uuid.MustParse(g.ID), "test1")
+	m2, _ := manager.AddMember(uuid.MustParse(g.ID), "test2")
+
+	if err := manager.AddPayment(
+		25.3,
+		uuid.MustParse(g.ID),
+		uuid.MustParse(m1.ID),
+		uuid.MustParse(m2.ID),
+	); err != nil {
+		t.Errorf("Couldn't update balances with new expense. Error: %s", err.Error())
+	}
+
+	m1, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m1.ID))
+	if m1.Balance != 25.3 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 25.3, m1.Balance)
+	}
+
+	m2, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m2.ID))
+	if m2.Balance != -25.3 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -25.3, m2.Balance)
+	}
+}
+
+func TestRemovePayment(t *testing.T) {
+	g, _ := manager.CreateGroup("test")
+	m1, _ := manager.AddMember(uuid.MustParse(g.ID), "test1")
+	m2, _ := manager.AddMember(uuid.MustParse(g.ID), "test2")
+
+	if err := manager.RemovePayment(
+		25.3,
+		uuid.MustParse(g.ID),
+		uuid.MustParse(m1.ID),
+		uuid.MustParse(m2.ID),
+	); err != nil {
+		t.Errorf("Couldn't update balances with new expense. Error: %s", err.Error())
+	}
+
+	m1, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m1.ID))
+	if m1.Balance != -25.3 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -25.3, m1.Balance)
+	}
+
+	m2, _ = manager.FetchMember(uuid.MustParse(g.ID), uuid.MustParse(m2.ID))
+	if m2.Balance != 25.3 {
+		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 25.3, m2.Balance)
 	}
 }

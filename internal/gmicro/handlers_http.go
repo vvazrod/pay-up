@@ -9,8 +9,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Handlers for HTTP requests to the groups microservice.
-type Handlers struct {
+// HTTPHandlers for HTTP requests to the groups microservice.
+type HTTPHandlers struct {
 	GetStatusHandler    func(http.ResponseWriter, *http.Request)
 	PostGroupHandler    func(http.ResponseWriter, *http.Request)
 	GetGroupHandler     func(http.ResponseWriter, *http.Request)
@@ -22,18 +22,18 @@ type Handlers struct {
 	DeleteMemberHandler func(http.ResponseWriter, *http.Request)
 }
 
-// NewHandlers that use a given data manager.
-func NewHandlers(gm *GroupsManager) *Handlers {
-	return &Handlers{
+// NewHTTPHandlers that use a given data manager.
+func NewHTTPHandlers(m Manager) *HTTPHandlers {
+	return &HTTPHandlers{
 		GetStatusHandler:    buildGetStatusHandler(),
-		PostGroupHandler:    buildPostGroupHandler(gm),
-		GetGroupHandler:     buildGetGroupHandler(gm),
-		PutGroupHandler:     buildPutGroupHandler(gm),
-		DeleteGroupHandler:  buildDeleteGroupHandler(gm),
-		PostMemberHandler:   buildPostMemberHandler(gm),
-		GetMemberHandler:    buildGetMemberHandler(gm),
-		PutMemberHandler:    buildPutMemberHandler(gm),
-		DeleteMemberHandler: buildDeleteMemberHandler(gm),
+		PostGroupHandler:    buildPostGroupHandler(m),
+		GetGroupHandler:     buildGetGroupHandler(m),
+		PutGroupHandler:     buildPutGroupHandler(m),
+		DeleteGroupHandler:  buildDeleteGroupHandler(m),
+		PostMemberHandler:   buildPostMemberHandler(m),
+		GetMemberHandler:    buildGetMemberHandler(m),
+		PutMemberHandler:    buildPutMemberHandler(m),
+		DeleteMemberHandler: buildDeleteMemberHandler(m),
 	}
 }
 
@@ -46,7 +46,7 @@ func buildGetStatusHandler() func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-func buildPostGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildPostGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Body == nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -72,7 +72,7 @@ func buildPostGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		g, err := gm.CreateGroup(name)
+		g, err := m.CreateGroup(name)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -83,7 +83,7 @@ func buildPostGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Re
 	}
 }
 
-func buildGetGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildGetGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		strid := mux.Vars(r)["groupid"]
 
@@ -93,7 +93,7 @@ func buildGetGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Req
 			return
 		}
 
-		g, err := gm.FetchGroup(id)
+		g, err := m.FetchGroup(id)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)
@@ -109,7 +109,7 @@ func buildGetGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Req
 	}
 }
 
-func buildPutGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildPutGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		strid := mux.Vars(r)["groupid"]
 
@@ -143,7 +143,7 @@ func buildPutGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Req
 			return
 		}
 
-		err = gm.UpdateGroup(id, name)
+		err = m.UpdateGroup(id, name)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)
@@ -158,7 +158,7 @@ func buildPutGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Req
 	}
 }
 
-func buildDeleteGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildDeleteGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		strid := mux.Vars(r)["groupid"]
 
@@ -168,7 +168,7 @@ func buildDeleteGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.
 			return
 		}
 
-		err = gm.RemoveGroup(id)
+		err = m.RemoveGroup(id)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)
@@ -183,7 +183,7 @@ func buildDeleteGroupHandler(gm *GroupsManager) func(http.ResponseWriter, *http.
 	}
 }
 
-func buildPostMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildPostMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		strid := mux.Vars(r)["groupid"]
 
@@ -217,7 +217,7 @@ func buildPostMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.R
 			return
 		}
 
-		m, err := gm.AddMember(id, name)
+		m, err := m.AddMember(id, name)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)
@@ -235,7 +235,7 @@ func buildPostMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.R
 	}
 }
 
-func buildGetMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildGetMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		strgroupid, strmemberid := vars["groupid"], vars["memberid"]
@@ -252,7 +252,7 @@ func buildGetMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		m, err := gm.FetchMember(groupid, memberid)
+		m, err := m.FetchMember(groupid, memberid)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)
@@ -268,7 +268,7 @@ func buildGetMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Re
 	}
 }
 
-func buildPutMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildPutMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		strgroupid, strmemberid := vars["groupid"], vars["memberid"]
@@ -309,7 +309,7 @@ func buildPutMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Re
 			return
 		}
 
-		err = gm.UpdateMember(groupid, memberid, name)
+		err = m.UpdateMember(groupid, memberid, name)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)
@@ -324,7 +324,7 @@ func buildPutMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Re
 	}
 }
 
-func buildDeleteMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http.Request) {
+func buildDeleteMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		strgroupid, strmemberid := vars["groupid"], vars["memberid"]
@@ -341,7 +341,7 @@ func buildDeleteMemberHandler(gm *GroupsManager) func(http.ResponseWriter, *http
 			return
 		}
 
-		err = gm.RemoveMember(groupid, memberid)
+		err = m.RemoveMember(groupid, memberid)
 		if err != nil {
 			if _, ok := err.(*NotFoundError); ok {
 				w.WriteHeader(http.StatusNotFound)

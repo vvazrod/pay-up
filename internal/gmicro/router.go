@@ -7,7 +7,7 @@ import (
 )
 
 // NewRouter with the given handlers.
-func NewRouter(h *Handlers) *mux.Router {
+func NewRouter(h *HTTPHandlers) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	// Add middleware
