@@ -24,7 +24,7 @@ func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
 	if err = ch.ExchangeDeclare(
 		exchange, // name
 		"direct", // type
-		false,    // durable
+		true,     // durable
 		false,    // autoDelete
 		false,    // internal
 		false,    // noWait
