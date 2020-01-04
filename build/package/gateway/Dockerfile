@@ -23,9 +23,9 @@ COPY tusk.yml go.mod go.sum ./
 RUN tusk install
 
 # Copy source files
-COPY cmd/gmicro/main.go .
-COPY internal/gmicro/ internal/gmicro
-COPY internal/consumer/ internal/consumer/
+COPY cmd/gateway/main.go .
+COPY internal/gateway/ internal/gateway
+COPY internal/publisher/ internal/publisher/
 COPY internal/tmicro/expense/ internal/tmicro/expense/
 COPY internal/tmicro/payment/ internal/tmicro/payment/
 
@@ -33,14 +33,14 @@ COPY internal/tmicro/payment/ internal/tmicro/payment/
 ENV CGO_ENABLED=0
 
 # Compile source files and delete them after the fact
-RUN tusk build gmicro \
+RUN tusk build gateway \
     && rm -f main.go && rm -rf internal/
 
 # Copy service supervisor config
-COPY init/gmicro.conf /etc/supervisor/conf.d/
+COPY init/gateway.conf /etc/supervisor/conf.d/
 
 # Expose container port 8080
 EXPOSE 8080
 
 # Run the application
-CMD [ "tusk", "run", "gmicro" ]
+CMD [ "tusk", "run", "gateway" ]
