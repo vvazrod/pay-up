@@ -1,8 +1,6 @@
 package publisher
 
 import (
-	"fmt"
-
 	"github.com/streadway/amqp"
 )
 
@@ -17,7 +15,7 @@ type Publisher struct {
 func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, fmt.Errorf("Couldn't create channel. Error: %s", err.Error())
+		return nil, err
 	}
 	defer ch.Close()
 
@@ -30,7 +28,7 @@ func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
 		false,    // noWait
 		nil,      // args
 	); err != nil {
-		return nil, fmt.Errorf("Couldn't declare exchange. Error: %s", err.Error())
+		return nil, err
 	}
 
 	return &Publisher{
