@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -17,7 +16,7 @@ import (
 
 func main() {
 	// Open AMQP connection
-	conn, err := amqp.Dial("")
+	conn, err := amqp.Dial("amqp://guest:guest@rabbit:5672")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,12 +50,6 @@ func main() {
 	// Build router with handlers
 	r := gmicro.NewRouter(httpHandlers)
 
-	// Retrieve server port from env
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
 	// Start server
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }

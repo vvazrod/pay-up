@@ -7,6 +7,7 @@ import (
 	"os/signal"
 
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/streadway/amqp"
 	"github.com/varrrro/pay-up/internal/consumer"
 	"github.com/varrrro/pay-up/internal/publisher"
@@ -17,7 +18,7 @@ import (
 
 func main() {
 	// Open AMQP connection
-	conn, err := amqp.Dial("")
+	conn, err := amqp.Dial("amqp://guest:guest@rabbit:5672")
 	if err != nil {
 		log.Fatal(err)
 	}

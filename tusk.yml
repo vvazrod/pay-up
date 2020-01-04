@@ -16,10 +16,7 @@ tasks:
     args:
       app:
         usage: The application to compile
-    run: |
-      set -e
-      go build ${app}.go
-      mv ${app} /usr/local/bin/
+    run: go build -o /usr/local/bin/${app} main.go
 
   run:
     usage: Run the application

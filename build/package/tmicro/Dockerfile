@@ -23,12 +23,10 @@ COPY tusk.yml go.mod go.sum ./
 RUN tusk install
 
 # Copy source files
-COPY cmd/tmicro/tmicro.go .
-COPY internal/tmicro/*.go internal/tmicro/
-COPY internal/tmicro/expense/*.go internal/tmicro/expense/
-COPY internal/tmicro/payment/*.go internal/tmicro/payment/
-COPY internal/consumer/*.go internal/consumer/
-COPY internal/publisher/*.go internal/publisher/
+COPY cmd/tmicro/main.go .
+COPY internal/tmicro/ internal/tmicro/
+COPY internal/consumer/ internal/consumer/
+COPY internal/publisher/ internal/publisher/
 
 # Disable CGO
 ENV CGO_ENABLED=0

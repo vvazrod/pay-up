@@ -23,13 +23,11 @@ COPY tusk.yml go.mod go.sum ./
 RUN tusk install
 
 # Copy source files
-COPY cmd/gmicro/gmicro.go .
-COPY internal/gmicro/*.go internal/gmicro/
-COPY internal/gmicro/group/*.go internal/gmicro/group/
-COPY internal/gmicro/member/*.go internal/gmicro/member/
-COPY internal/consumer/*.go internal/consumer/
-COPY internal/tmicro/expense/*.go internal/tmicro/expense/
-COPY internal/tmicro/payment/*.go internal/tmicro/payment/
+COPY cmd/gmicro/main.go .
+COPY internal/gmicro/ internal/gmicro
+COPY internal/consumer/ internal/consumer/
+COPY internal/tmicro/expense/ internal/tmicro/expense/
+COPY internal/tmicro/payment/ internal/tmicro/payment/
 
 # Disable CGO
 ENV CGO_ENABLED=0
@@ -41,8 +39,8 @@ RUN tusk build gmicro \
 # Copy service supervisor config
 COPY init/gmicro.conf /etc/supervisor/conf.d/
 
-# Use the given port
-EXPOSE ${PORT}
+# Expose container port 8080
+EXPOSE 8080
 
 # Run the application
 CMD [ "tusk", "run", "gmicro" ]
