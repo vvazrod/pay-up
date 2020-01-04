@@ -53,6 +53,7 @@ func buildPostGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
+		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -124,6 +125,7 @@ func buildPutGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
+		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -198,6 +200,7 @@ func buildPostMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) 
 			return
 		}
 
+		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -290,6 +293,7 @@ func buildPutMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
+		defer r.Body.Close()
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
