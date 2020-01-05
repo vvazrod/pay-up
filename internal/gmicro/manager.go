@@ -2,27 +2,30 @@ package gmicro
 
 import (
 	"math"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/varrrro/pay-up/internal/gmicro/group"
 	"github.com/varrrro/pay-up/internal/gmicro/member"
+	"github.com/varrrro/pay-up/internal/tmicro/expense"
+	"github.com/varrrro/pay-up/internal/tmicro/payment"
 )
 
 // Manager interface for the groups microservice.
 type Manager interface {
-	CreateGroup(name string) (group.Group, error)
+	CreateGroup(g *group.Group) error
 	FetchGroup(id uuid.UUID) (group.Group, error)
-	UpdateGroup(id uuid.UUID, name string) error
+	UpdateGroup(g *group.Group) error
 	RemoveGroup(id uuid.UUID) error
-	AddMember(groupid uuid.UUID, name string) (member.Member, error)
-	FetchMember(groupid uuid.UUID, memberid uuid.UUID) (member.Member, error)
-	UpdateMember(groupid uuid.UUID, memberid uuid.UUID, name string) error
-	RemoveMember(groupid uuid.UUID, memberid uuid.UUID) error
-	AddExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error
-	RemoveExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error
-	AddPayment(amount float32, groupid, payerid, recipientid uuid.UUID) error
-	RemovePayment(amount float32, groupid, payerid, recipientid uuid.UUID) error
+	AddMember(gid uuid.UUID, m *member.Member) error
+	FetchMember(gid uuid.UUID, mid uuid.UUID) (member.Member, error)
+	UpdateMember(gid uuid.UUID, m *member.Member) error
+	RemoveMember(gid uuid.UUID, mid uuid.UUID) error
+	AddExpense(e *expense.Expense) error
+	RemoveExpense(e *expense.Expense) error
+	AddPayment(p *payment.Payment) error
+	RemovePayment(p *payment.Payment) error
 }
 
 // GroupsManager that works as single source of truth.
@@ -36,39 +39,36 @@ func NewManager(db *gorm.DB) *GroupsManager {
 }
 
 // CreateGroup with the given name.
-func (gm *GroupsManager) CreateGroup(name string) (group.Group, error) {
-	g := group.New(name)
-
+func (gm *GroupsManager) CreateGroup(g *group.Group) error {
 	gm.DB.Create(g)
 
-	return *g, nil
+	return nil
 }
 
 // FetchGroup with the given ID.
 func (gm *GroupsManager) FetchGroup(id uuid.UUID) (group.Group, error) {
 	var g group.Group
 
-	gm.DB.Preload("Members").First(&g, "id = ?", id.String())
+	gm.DB.Preload("Members").First(&g, "id = ?", id)
 
-	if g.ID != id.String() {
-		return g, &NotFoundError{"No group found", id.String()}
+	if g.ID != id {
+		return g, &NotFoundError{"No group found", id}
 	}
 
 	return g, nil
 }
 
 // UpdateGroup with a new name.
-func (gm *GroupsManager) UpdateGroup(id uuid.UUID, name string) error {
-	var g group.Group
+func (gm *GroupsManager) UpdateGroup(g *group.Group) error {
+	var prevg group.Group
 
-	gm.DB.First(&g, "id = ?", id)
+	gm.DB.First(&prevg, "id = ?", g.ID)
 
-	if g.ID != id.String() {
-		return &NotFoundError{"No group found", id.String()}
+	if prevg.ID != g.ID {
+		return &NotFoundError{"No group found", g.ID}
 	}
 
-	g.Name = name
-	gm.DB.Save(&g)
+	gm.DB.Model(&prevg).Update("name", g.Name)
 
 	return nil
 }
@@ -79,8 +79,8 @@ func (gm *GroupsManager) RemoveGroup(id uuid.UUID) error {
 
 	gm.DB.First(&g, "id = ?", id)
 
-	if g.ID != id.String() {
-		return &NotFoundError{"No group found", id.String()}
+	if g.ID != id {
+		return &NotFoundError{"No group found", id}
 	}
 
 	gm.DB.Delete(&g)
@@ -89,68 +89,67 @@ func (gm *GroupsManager) RemoveGroup(id uuid.UUID) error {
 }
 
 // AddMember to the given group.
-func (gm *GroupsManager) AddMember(groupid uuid.UUID, name string) (member.Member, error) {
+func (gm *GroupsManager) AddMember(gid uuid.UUID, m *member.Member) error {
 	var g group.Group
 
-	gm.DB.Preload("Members").First(&g, "id = ?", groupid)
+	gm.DB.Preload("Members").First(&g, "id = ?", gid)
 
-	if g.ID != groupid.String() {
-		return member.Member{}, &NotFoundError{"No group found", groupid.String()}
+	if g.ID != gid {
+		return &NotFoundError{"No group found", gid}
 	}
 
-	for _, m := range g.Members {
-		if m.Name == name {
-			return member.Member{}, &AlreadyPresentError{"Member already present in the group", groupid.String(), name}
+	for _, prevm := range g.Members {
+		if prevm.Name == m.Name {
+			return &AlreadyPresentError{"Member already present in the group", gid, m.Name}
 		}
 	}
 
-	m := member.New(name)
 	gm.DB.Model(&g).Association("Members").Append(m)
 
-	return *m, nil
+	return nil
 }
 
 // FetchMember with the given ID and group ID.
-func (gm *GroupsManager) FetchMember(groupid, memberid uuid.UUID) (member.Member, error) {
+func (gm *GroupsManager) FetchMember(gid, mid uuid.UUID) (member.Member, error) {
 	var m member.Member
 
-	gm.DB.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+	gm.DB.First(&m, "id = ? AND group_id = ?", mid, gid)
 
-	if m.ID != memberid.String() {
-		return m, &NotFoundError{"No member found", memberid.String()}
+	if m.ID != mid {
+		return m, &NotFoundError{"No member found", mid}
 	}
 
 	return m, nil
 }
 
+// TODO: Check if new name is already in use
 // UpdateMember with a new name.
-func (gm *GroupsManager) UpdateMember(groupid, memberid uuid.UUID, name string) error {
-	var m member.Member
+func (gm *GroupsManager) UpdateMember(gid uuid.UUID, m *member.Member) error {
+	var prevm member.Member
 
-	gm.DB.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+	gm.DB.First(&prevm, "id = ? AND group_id = ?", m.ID, gid)
 
-	if m.ID != memberid.String() {
-		return &NotFoundError{"No member found", memberid.String()}
+	if prevm.ID != m.ID {
+		return &NotFoundError{"No member found", m.ID}
 	}
 
-	m.Name = name
-	gm.DB.Save(&m)
+	gm.DB.Model(&prevm).Update("name", m.Name)
 
 	return nil
 }
 
 // RemoveMember with the given ID and group ID.
-func (gm *GroupsManager) RemoveMember(groupid, memberid uuid.UUID) error {
+func (gm *GroupsManager) RemoveMember(gid, mid uuid.UUID) error {
 	var m member.Member
 
-	gm.DB.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+	gm.DB.First(&m, "id = ? AND group_id = ?", mid, gid)
 
-	if m.ID != memberid.String() {
-		return &NotFoundError{"No member found", memberid.String()}
+	if m.ID != mid {
+		return &NotFoundError{"No member found", mid}
 	}
 
 	if m.Balance != 0.0 {
-		return &BalanceError{"Can't delete member with balance", groupid.String(), memberid.String(), m.Balance}
+		return &BalanceError{"Can't delete member with balance", gid, mid, m.Balance}
 	}
 
 	gm.DB.Delete(&m)
@@ -159,20 +158,27 @@ func (gm *GroupsManager) RemoveMember(groupid, memberid uuid.UUID) error {
 }
 
 // AddExpense to a group, updating the balance of the members involved.
-func (gm *GroupsManager) AddExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error {
+func (gm *GroupsManager) AddExpense(e *expense.Expense) error {
 	tx := gm.DB.Begin()
 
 	// Update payer's balance
-	if err := updateBalance(tx, groupid, payerid, amount); err != nil {
+	if err := updateBalance(tx, e.GroupID, e.Payer, e.Amount); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Update recipients' balances
-	recAmount := amount / float32(len(*recipients))
+	rec := strings.Split(e.Recipients, ";")
+	recAmount := e.Amount / float32(len(rec))
 	recAmount = float32(math.Floor(float64(recAmount*100))) / 100
-	for _, r := range *recipients {
-		if err := updateBalance(tx, groupid, r, -recAmount); err != nil {
+	for _, r := range rec {
+		rid, err := uuid.Parse(r)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := updateBalance(tx, e.GroupID, rid, -recAmount); err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -183,20 +189,27 @@ func (gm *GroupsManager) AddExpense(amount float32, groupid, payerid uuid.UUID, 
 }
 
 // RemoveExpense from a group, updating the balance of the members involved.
-func (gm *GroupsManager) RemoveExpense(amount float32, groupid, payerid uuid.UUID, recipients *[]uuid.UUID) error {
+func (gm *GroupsManager) RemoveExpense(e *expense.Expense) error {
 	tx := gm.DB.Begin()
 
 	// Update payer's balance
-	if err := updateBalance(tx, groupid, payerid, -amount); err != nil {
+	if err := updateBalance(tx, e.GroupID, e.Payer, -e.Amount); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Update recipients' balances
-	recAmount := amount / float32(len(*recipients))
+	rec := strings.Split(e.Recipients, ";")
+	recAmount := e.Amount / float32(len(rec))
 	recAmount = float32(math.Floor(float64(recAmount*100))) / 100
-	for _, r := range *recipients {
-		if err := updateBalance(tx, groupid, r, recAmount); err != nil {
+	for _, r := range rec {
+		rid, err := uuid.Parse(r)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := updateBalance(tx, e.GroupID, rid, recAmount); err != nil {
 			tx.Rollback()
 			return err
 		}
@@ -207,17 +220,17 @@ func (gm *GroupsManager) RemoveExpense(amount float32, groupid, payerid uuid.UUI
 }
 
 // AddPayment to a group, updating the balance of the members involved.
-func (gm *GroupsManager) AddPayment(amount float32, groupid, payerid, recipientid uuid.UUID) error {
+func (gm *GroupsManager) AddPayment(p *payment.Payment) error {
 	tx := gm.DB.Begin()
 
 	// Update payer's balance
-	if err := updateBalance(tx, groupid, payerid, amount); err != nil {
+	if err := updateBalance(tx, p.GroupID, p.Payer, p.Amount); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Update recipient's balance
-	if err := updateBalance(tx, groupid, recipientid, -amount); err != nil {
+	if err := updateBalance(tx, p.GroupID, p.Recipient, -p.Amount); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -227,17 +240,17 @@ func (gm *GroupsManager) AddPayment(amount float32, groupid, payerid, recipienti
 }
 
 // RemovePayment from a group, updating the balance of the members involved.
-func (gm *GroupsManager) RemovePayment(amount float32, groupid, payerid, recipientid uuid.UUID) error {
+func (gm *GroupsManager) RemovePayment(p *payment.Payment) error {
 	tx := gm.DB.Begin()
 
 	// Update payer's balance
-	if err := updateBalance(tx, groupid, payerid, -amount); err != nil {
+	if err := updateBalance(tx, p.GroupID, p.Payer, -p.Amount); err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	// Update recipient's balance
-	if err := updateBalance(tx, groupid, recipientid, amount); err != nil {
+	if err := updateBalance(tx, p.GroupID, p.Recipient, p.Amount); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -246,13 +259,13 @@ func (gm *GroupsManager) RemovePayment(amount float32, groupid, payerid, recipie
 	return nil
 }
 
-func updateBalance(tx *gorm.DB, groupid, memberid uuid.UUID, amount float32) error {
+func updateBalance(tx *gorm.DB, gid, mid uuid.UUID, amount float32) error {
 	var m member.Member
 
-	tx.First(&m, "id = ? AND group_id = ?", memberid, groupid)
+	tx.First(&m, "id = ? AND group_id = ?", mid, gid)
 
-	if m.ID != memberid.String() {
-		return &NotFoundError{"No member found", memberid.String()}
+	if m.ID != mid {
+		return &NotFoundError{"No member found", mid}
 	}
 
 	tx.Model(&m).Update("balance", m.Balance+amount)
