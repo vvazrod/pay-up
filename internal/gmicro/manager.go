@@ -100,7 +100,7 @@ func (gm *GroupsManager) AddMember(gid uuid.UUID, m *member.Member) error {
 
 	for _, prevm := range g.Members {
 		if prevm.Name == m.Name {
-			return &AlreadyPresentError{"Member already present in the group", gid, m.Name}
+			return &AlreadyPresentError{"Name already in use in the group", gid, m.Name}
 		}
 	}
 
@@ -122,9 +122,22 @@ func (gm *GroupsManager) FetchMember(gid, mid uuid.UUID) (member.Member, error) 
 	return m, nil
 }
 
-// TODO: Check if new name is already in use
 // UpdateMember with a new name.
 func (gm *GroupsManager) UpdateMember(gid uuid.UUID, m *member.Member) error {
+	var members []member.Member
+
+	gm.DB.Where("group_id = ?", gid).Find(&members)
+
+	if len(members) == 0 {
+		return &NotFoundError{"No member found for the group", gid}
+	}
+
+	for _, prevm := range members {
+		if prevm.Name == m.Name {
+			return &AlreadyPresentError{"Name already in use in the group", gid, m.Name}
+		}
+	}
+
 	var prevm member.Member
 
 	gm.DB.First(&prevm, "id = ? AND group_id = ?", m.ID, gid)

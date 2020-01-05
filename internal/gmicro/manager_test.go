@@ -132,7 +132,7 @@ func TestAddMemberRepeated(t *testing.T) {
 	}
 
 	if err := gm.AddMember(g.ID, &m); err == nil {
-		t.Error("Adding duplicate member didn't return an error.")
+		t.Error("Adding duplicate member didn't return an error")
 	}
 
 	if g, err := gm.FetchGroup(g.ID); err != nil {
@@ -170,7 +170,7 @@ func TestFetchMemberNotFound(t *testing.T) {
 	}
 
 	if _, err := gm.FetchMember(g.ID, uuid.New()); err == nil {
-		t.Error("Fetching non-existant member didn't return an error.")
+		t.Error("Fetching non-existant member didn't return an error")
 	}
 }
 
@@ -196,7 +196,7 @@ func TestUpdateMember(t *testing.T) {
 	if m2, err := gm.FetchMember(g.ID, m.ID); err != nil {
 		t.Errorf("Couldn't fetch member. Error: %s", err.Error())
 	} else if m2.Name != "updated" {
-		t.Error("Member's name wasn't updated correctly.")
+		t.Error("Member's name wasn't updated correctly")
 	}
 }
 
@@ -210,7 +210,39 @@ func TestUpdateMemberNotFound(t *testing.T) {
 	m := member.Member{ID: uuid.New(), Name: "updated"}
 
 	if err := gm.UpdateMember(g.ID, &m); err == nil {
-		t.Error("Updating non-existant member didn't return an error.")
+		t.Error("Updating non-existant member didn't return an error")
+	}
+}
+
+func TestUpdateMemberAlreadyPresent(t *testing.T) {
+	g := group.Group{ID: uuid.New(), Name: "test"}
+
+	if err := gm.CreateGroup(&g); err != nil {
+		t.Errorf("Couldn't create group. Error: %s", err.Error())
+	}
+
+	m1 := member.Member{ID: uuid.New(), Name: "inuse"}
+
+	if err := gm.AddMember(g.ID, &m1); err != nil {
+		t.Errorf("Couldn't create member. Error: %s", err.Error())
+	}
+
+	m2 := member.Member{ID: uuid.New(), Name: "test"}
+
+	if err := gm.AddMember(g.ID, &m2); err != nil {
+		t.Errorf("Couldn't create member. Error: %s", err.Error())
+	}
+
+	m2.Name = "inuse"
+
+	if err := gm.UpdateMember(g.ID, &m2); err == nil {
+		t.Error("Updating member with name already in use didn't return an error")
+	}
+
+	if m3, err := gm.FetchMember(g.ID, m2.ID); err != nil {
+		t.Errorf("Couldn't fetch member. Error: %s", err.Error())
+	} else if m3.Name == "inuse" {
+		t.Error("Member's name was updated nonetheless")
 	}
 }
 
@@ -232,13 +264,13 @@ func TestRemoveMember(t *testing.T) {
 	}
 
 	if _, err := gm.FetchMember(g.ID, m.ID); err == nil {
-		t.Error("Fetching member after deletion didn't return an error.")
+		t.Error("Fetching member after deletion didn't return an error")
 	}
 
 	if g2, err := gm.FetchGroup(g.ID); err != nil {
 		t.Errorf("Couldn't fetch group. Error: %s", err.Error())
 	} else if len(g2.Members) != 0 {
-		t.Error("Member wasn't removed from group correctly.")
+		t.Error("Member wasn't removed from group correctly")
 	}
 }
 
@@ -250,7 +282,7 @@ func TestRemoveMemberNotFound(t *testing.T) {
 	}
 
 	if err := gm.RemoveMember(g.ID, uuid.New()); err == nil {
-		t.Error("Deleting non-existant member didn't return an error.")
+		t.Error("Deleting non-existant member didn't return an error")
 	}
 }
 
