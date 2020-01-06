@@ -11,9 +11,9 @@ import (
 // Manager interface for the transactions microservice.
 type Manager interface {
 	CreateExpense(e *expense.Expense) error
-	RemoveLastExpense(groupid uuid.UUID) (*expense.Expense, error)
+	RemoveLastExpense(gid uuid.UUID) (*expense.Expense, error)
 	CreatePayment(p *payment.Payment) error
-	RemoveLastPayment(groupid uuid.UUID) (*payment.Payment, error)
+	RemoveLastPayment(gid uuid.UUID) (*payment.Payment, error)
 }
 
 // TransactionsManager that works as single source of truth.
@@ -28,14 +28,6 @@ func NewManager(db *gorm.DB) *TransactionsManager {
 
 // CreateExpense in the given group.
 func (tm *TransactionsManager) CreateExpense(e *expense.Expense) error {
-	if _, err := uuid.Parse(e.ID); err != nil {
-		return &UUIDParseError{"Couldn't parse expense ID", e.ID, err}
-	} else if _, err := uuid.Parse(e.GroupID); err != nil {
-		return &UUIDParseError{"Couldn't parse expense group ID", e.GroupID, err}
-	} else if _, err := uuid.Parse(e.Payer); err != nil {
-		return &UUIDParseError{"Couldn't parse expense payer ID", e.Payer, err}
-	}
-
 	rec := strings.Split(e.Recipients, ";")
 	for _, r := range rec {
 		if _, err := uuid.Parse(r); err != nil {
@@ -49,13 +41,13 @@ func (tm *TransactionsManager) CreateExpense(e *expense.Expense) error {
 }
 
 // RemoveLastExpense from the given group.
-func (tm *TransactionsManager) RemoveLastExpense(groupid uuid.UUID) (*expense.Expense, error) {
+func (tm *TransactionsManager) RemoveLastExpense(gid uuid.UUID) (*expense.Expense, error) {
 	var e expense.Expense
 
-	tm.DB.Where("group_id = ?", groupid).Order("date DESC").First(&e)
+	tm.DB.Where("group_id = ?", gid).Order("date DESC").First(&e)
 
-	if e.GroupID != groupid.String() {
-		return nil, &NotFoundError{"No expense found", groupid.String()}
+	if e.GroupID != gid {
+		return nil, &NotFoundError{"No expense found", gid}
 	}
 
 	tm.DB.Delete(&e)
@@ -65,29 +57,19 @@ func (tm *TransactionsManager) RemoveLastExpense(groupid uuid.UUID) (*expense.Ex
 
 // CreatePayment in the given group.
 func (tm *TransactionsManager) CreatePayment(p *payment.Payment) error {
-	if _, err := uuid.Parse(p.ID); err != nil {
-		return &UUIDParseError{"Couldn't parse payment ID", p.ID, err}
-	} else if _, err := uuid.Parse(p.GroupID); err != nil {
-		return &UUIDParseError{"Couldn't parse payment group ID", p.GroupID, err}
-	} else if _, err := uuid.Parse(p.Payer); err != nil {
-		return &UUIDParseError{"Couldn't parse payment payer ID", p.Payer, err}
-	} else if _, err := uuid.Parse(p.Recipient); err != nil {
-		return &UUIDParseError{"Couldn't parse payment recipient ID", p.Recipient, err}
-	}
-
 	tm.DB.Create(p)
 
 	return nil
 }
 
 // RemoveLastPayment from the given group.
-func (tm *TransactionsManager) RemoveLastPayment(groupid uuid.UUID) (*payment.Payment, error) {
+func (tm *TransactionsManager) RemoveLastPayment(gid uuid.UUID) (*payment.Payment, error) {
 	var p payment.Payment
 
-	tm.DB.Where("group_id = ?", groupid).Order("date DESC").First(&p)
+	tm.DB.Where("group_id = ?", gid).Order("date DESC").First(&p)
 
-	if p.GroupID != groupid.String() {
-		return nil, &NotFoundError{"No payment found", groupid.String()}
+	if p.GroupID != gid {
+		return nil, &NotFoundError{"No payment found", gid}
 	}
 
 	tm.DB.Delete(&p)

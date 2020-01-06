@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/streadway/amqp"
 	"github.com/varrrro/pay-up/internal/consumer"
 	"github.com/varrrro/pay-up/internal/publisher"
@@ -16,16 +17,48 @@ import (
 	"github.com/varrrro/pay-up/internal/tmicro/payment"
 )
 
+func init() {
+	// Set log formatter
+	log.SetFormatter(&log.TextFormatter{
+		DisableColors: true,
+		FullTimestamp: true,
+	})
+
+	// Write logs to stdout
+	log.SetOutput(os.Stdout)
+}
+
 func main() {
+	rabbit := "amqp://guest:guest@rabbit:5672"
+	dbconn := "host=db-tmicro port=5432 user=tmicro dbname=tmicro password=tmicro sslmode=disable"
+	exchange := "transactions"
+	key := "balance"
+	queue := "management"
+	ctag := "tmicro"
+
 	// Open AMQP connection
-	conn, err := amqp.Dial("amqp://guest:guest@rabbit:5672")
+	log.WithField("url", rabbit).Info("Connecting to AMQP server")
+	conn, err := amqp.Dial(rabbit)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"url": rabbit,
+			"err": err,
+		}).Fatal("AMQP server connection failure")
 	}
 	defer conn.Close()
 
 	// Open database connection
-	db, _ := gorm.Open("sqlite3", ":memory:")
+	log.WithFields(log.Fields{
+		"db":  "sqlite3",
+		"url": dbconn,
+	}).Info("Connecting to database")
+	db, err := gorm.Open("postgres", dbconn)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"url": dbconn,
+			"err": err,
+		}).Fatal("Database connection failure")
+	}
 	defer db.Close()
 
 	// Create tables
@@ -35,18 +68,33 @@ func main() {
 	tm := tmicro.NewManager(db)
 
 	// Create AMQP publisher
-	pub, err := publisher.New(conn, "transactions", "balance")
+	log.WithFields(log.Fields{
+		"exchange": exchange,
+		"key":      key,
+	}).Info("Creating AMQP publisher")
+	pub, err := publisher.New(conn, exchange, key)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"exchange": exchange,
+			"key":      key,
+			"err":      err,
+		}).Fatal("Can't create publisher")
 	}
 
-	// Create message handler
-	handler := tmicro.NewMessageHandler(tm, pub)
-
 	// Create AMQP consumer
-	c, err := consumer.New(conn, "transactions", "management", "tmicro")
+	log.WithFields(log.Fields{
+		"exchange": exchange,
+		"queue":    queue,
+		"tag":      ctag,
+	}).Info("Creating AMQP consumer")
+	c, err := consumer.New(conn, exchange, queue, ctag)
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"exchange": exchange,
+			"queue":    queue,
+			"tag":      ctag,
+			"err":      err,
+		}).Fatal("Can't create consumer")
 	}
 
 	// Create channel to listen for OS signals
@@ -57,7 +105,8 @@ func main() {
 	ctx, cfunc := context.WithCancel(context.Background())
 	defer cfunc()
 
-	c.Start(ctx, handler) // start consumer
+	log.Info("Starting AMQP consumer")
+	c.Start(ctx, tmicro.MessageHandler(tm, pub)) // start consumer
 
 	<-sch // blocking until we receive a signal
 }

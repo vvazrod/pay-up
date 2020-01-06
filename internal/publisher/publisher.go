@@ -39,10 +39,20 @@ func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
 }
 
 // Publish a message to the publisher's exchange with the given routing key.
-func (p *Publisher) Publish(msg *amqp.Publishing) error {
+func (p *Publisher) Publish(op string, body []byte, dmode, prio uint8) error {
 	ch, err := p.conn.Channel()
 	if err != nil {
 		return err
+	}
+
+	msg := amqp.Publishing{
+		Headers: amqp.Table{
+			"operation": op,
+		},
+		ContentType:  "application/json",
+		DeliveryMode: dmode,
+		Priority:     prio,
+		Body:         body,
 	}
 
 	if err = ch.Publish(
@@ -50,7 +60,7 @@ func (p *Publisher) Publish(msg *amqp.Publishing) error {
 		p.key,      // key
 		false,      // mandatory
 		false,      // immediate
-		*msg,       // message
+		msg,        // message
 	); err != nil {
 		return err
 	}
