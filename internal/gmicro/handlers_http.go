@@ -2,362 +2,367 @@ package gmicro
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/varrrro/pay-up/internal/gmicro/group"
+	"github.com/varrrro/pay-up/internal/gmicro/member"
 )
 
-// HTTPHandlers for HTTP requests to the groups microservice.
-type HTTPHandlers struct {
-	GetStatusHandler    func(http.ResponseWriter, *http.Request)
-	PostGroupHandler    func(http.ResponseWriter, *http.Request)
-	GetGroupHandler     func(http.ResponseWriter, *http.Request)
-	PutGroupHandler     func(http.ResponseWriter, *http.Request)
-	DeleteGroupHandler  func(http.ResponseWriter, *http.Request)
-	PostMemberHandler   func(http.ResponseWriter, *http.Request)
-	GetMemberHandler    func(http.ResponseWriter, *http.Request)
-	PutMemberHandler    func(http.ResponseWriter, *http.Request)
-	DeleteMemberHandler func(http.ResponseWriter, *http.Request)
+// StatusHandler returns a static message to know the server is working.
+func StatusHandler(rw http.ResponseWriter, r *http.Request) {
+	status := map[string]string{"status": "OK"}
+
+	rw.WriteHeader(http.StatusOK)
+	json.NewEncoder(rw).Encode(&status)
 }
 
-// NewHTTPHandlers that use a given data manager.
-func NewHTTPHandlers(m Manager) *HTTPHandlers {
-	return &HTTPHandlers{
-		GetStatusHandler:    buildGetStatusHandler(),
-		PostGroupHandler:    buildPostGroupHandler(m),
-		GetGroupHandler:     buildGetGroupHandler(m),
-		PutGroupHandler:     buildPutGroupHandler(m),
-		DeleteGroupHandler:  buildDeleteGroupHandler(m),
-		PostMemberHandler:   buildPostMemberHandler(m),
-		GetMemberHandler:    buildGetMemberHandler(m),
-		PutMemberHandler:    buildPutMemberHandler(m),
-		DeleteMemberHandler: buildDeleteMemberHandler(m),
+// GroupsHandler manages requests for creating new groups.
+func GroupsHandler(m Manager) func(http.ResponseWriter, *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		logger := log.WithFields(log.Fields{
+			"uri":    r.URL,
+			"method": r.Method,
+		})
+
+		// Parse JSON
+		var g group.Group
+		if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+			logger.WithError(err).Error("Can't parse request body as group")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Create group
+		if err := m.CreateGroup(&g); err != nil {
+			logger.WithError(err).Warn("Can't create group")
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		rw.WriteHeader(http.StatusCreated)
 	}
 }
 
-func buildGetStatusHandler() func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		status := map[string]string{"status": "OK"}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&status)
+// GroupHandler manages requests for fetching, updating or deleting a group.
+func GroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			getGroupHandler(m, rw, r)
+			break
+		case "PUT":
+			putGroupHandler(m, rw, r)
+			break
+		case "DELETE":
+			deleteGroupHandler(m, rw, r)
+		}
 	}
 }
 
-func buildPostGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Body == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+func getGroupHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
+	logger := log.WithFields(log.Fields{
+		"uri":    r.URL,
+		"method": r.Method,
+	})
 
-		defer r.Body.Close()
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		var data map[string]interface{}
-		err = json.Unmarshal(body, &data)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		name, ok := data["name"].(string)
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		g, err := m.CreateGroup(name)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(&g)
+	// Get group ID from request path
+	gid, err := uuid.Parse(mux.Vars(r)["groupid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse group ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	// Fetch group
+	g, err := m.FetchGroup(gid)
+	if err != nil {
+		logger.WithError(err).Warn("Can't fetch group")
+
+		if _, ok := err.(*NotFoundError); ok {
+			rw.WriteHeader(http.StatusNotFound)
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	json.NewEncoder(rw).Encode(&g)
 }
 
-func buildGetGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		strid := mux.Vars(r)["groupid"]
+func putGroupHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
+	logger := log.WithFields(log.Fields{
+		"uri":    r.URL,
+		"method": r.Method,
+	})
 
-		id, err := uuid.Parse(strid)
+	// Get group ID from request path
+	gid, err := uuid.Parse(mux.Vars(r)["groupid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse group ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Parse JSON
+	var g group.Group
+	if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+		logger.WithError(err).Error("Can't parse request body as group")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Check if path and body IDs match
+	if g.ID != gid {
+		logger.WithFields(log.Fields{
+			"path": gid,
+			"body": g.ID,
+		}).Error("Group IDs in path and body don't match")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Update group
+	if err := m.UpdateGroup(&g); err != nil {
+		logger.WithError(err).Warn("Can't update group")
+
+		if _, ok := err.(*NotFoundError); ok {
+			rw.WriteHeader(http.StatusNotFound)
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+}
+
+func deleteGroupHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
+	logger := log.WithFields(log.Fields{
+		"uri":    r.URL,
+		"method": r.Method,
+	})
+
+	// Get group ID from request path
+	gid, err := uuid.Parse(mux.Vars(r)["groupid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse group ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Remove group
+	if err := m.RemoveGroup(gid); err != nil {
+		logger.WithError(err).Warn("Can't remove group")
+
+		if _, ok := err.(*NotFoundError); ok {
+			rw.WriteHeader(http.StatusNotFound)
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	rw.WriteHeader(http.StatusNoContent)
+}
+
+// MembersHandler manages requests for adding new members.
+func MembersHandler(m Manager) func(http.ResponseWriter, *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		logger := log.WithFields(log.Fields{
+			"uri":    r.URL,
+			"method": r.Method,
+		})
+
+		// Get group ID from request path
+		gid, err := uuid.Parse(mux.Vars(r)["groupid"])
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			logger.WithError(err).Error("Can't parse group ID as UUID")
+			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		g, err := m.FetchGroup(id)
-		if err != nil {
+		// Parse JSON
+		var mb member.Member
+		if err := json.NewDecoder(r.Body).Decode(&mb); err != nil {
+			logger.WithError(err).Error("Can't parse request body as member")
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		// Add member
+		if err := m.AddMember(gid, &mb); err != nil {
+			logger.WithError(err).Warn("Can't add member")
+
 			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&g)
-	}
-}
-
-func buildPutGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		strid := mux.Vars(r)["groupid"]
-
-		id, err := uuid.Parse(strid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if r.Body == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		defer r.Body.Close()
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		var data map[string]interface{}
-		err = json.Unmarshal(body, &data)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		name, ok := data["name"].(string)
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		err = m.UpdateGroup(id, name)
-		if err != nil {
-			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func buildDeleteGroupHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		strid := mux.Vars(r)["groupid"]
-
-		id, err := uuid.Parse(strid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		err = m.RemoveGroup(id)
-		if err != nil {
-			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
-
-		w.WriteHeader(http.StatusNoContent)
-	}
-}
-
-func buildPostMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		strid := mux.Vars(r)["groupid"]
-
-		id, err := uuid.Parse(strid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if r.Body == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		defer r.Body.Close()
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		var data map[string]interface{}
-		err = json.Unmarshal(body, &data)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		name, ok := data["name"].(string)
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		m, err := m.AddMember(id, name)
-		if err != nil {
-			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
+				rw.WriteHeader(http.StatusNotFound)
 			} else if _, ok := err.(*AlreadyPresentError); ok {
-				w.WriteHeader(http.StatusConflict)
+				rw.WriteHeader(http.StatusConflict)
 			} else {
-				w.WriteHeader(http.StatusInternalServerError)
+				rw.WriteHeader(http.StatusInternalServerError)
 			}
 
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&m)
+		rw.WriteHeader(http.StatusCreated)
 	}
 }
 
-func buildGetMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		strgroupid, strmemberid := vars["groupid"], vars["memberid"]
-
-		groupid, err := uuid.Parse(strgroupid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
+// MemberHandler manages requests for fetchinf, updating or deleting members.
+func MemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			getMemberHandler(m, rw, r)
+			break
+		case "PUT":
+			putMemberHandler(m, rw, r)
+			break
+		case "DELETE":
+			deleteMemberHandler(m, rw, r)
 		}
-
-		memberid, err := uuid.Parse(strmemberid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		m, err := m.FetchMember(groupid, memberid)
-		if err != nil {
-			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(&m)
 	}
 }
 
-func buildPutMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		strgroupid, strmemberid := vars["groupid"], vars["memberid"]
+func getMemberHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
+	logger := log.WithFields(log.Fields{
+		"uri":    r.URL,
+		"method": r.Method,
+	})
 
-		groupid, err := uuid.Parse(strgroupid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		memberid, err := uuid.Parse(strmemberid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		if r.Body == nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		defer r.Body.Close()
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		var data map[string]interface{}
-		err = json.Unmarshal(body, &data)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		name, ok := data["name"].(string)
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		err = m.UpdateMember(groupid, memberid, name)
-		if err != nil {
-			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
+	// Get group ID from request path
+	gid, err := uuid.Parse(mux.Vars(r)["groupid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse group ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	// Get member ID from request path
+	mid, err := uuid.Parse(mux.Vars(r)["memberid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse member ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Fetch member
+	mb, err := m.FetchMember(gid, mid)
+	if err != nil {
+		logger.WithError(err).Warn("Can't fetch member")
+
+		if _, ok := err.(*NotFoundError); ok {
+			rw.WriteHeader(http.StatusNotFound)
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	json.NewEncoder(rw).Encode(&mb)
 }
 
-func buildDeleteMemberHandler(m Manager) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		strgroupid, strmemberid := vars["groupid"], vars["memberid"]
+func putMemberHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
+	logger := log.WithFields(log.Fields{
+		"uri":    r.URL,
+		"method": r.Method,
+	})
 
-		groupid, err := uuid.Parse(strgroupid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		memberid, err := uuid.Parse(strmemberid)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		err = m.RemoveMember(groupid, memberid)
-		if err != nil {
-			if _, ok := err.(*NotFoundError); ok {
-				w.WriteHeader(http.StatusNotFound)
-			} else if _, ok := err.(*BalanceError); ok {
-				w.WriteHeader(http.StatusConflict)
-			} else {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-
-			return
-		}
-
-		w.WriteHeader(http.StatusNoContent)
+	// Get group ID from request path
+	gid, err := uuid.Parse(mux.Vars(r)["groupid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse group ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	// Get member ID from request path
+	mid, err := uuid.Parse(mux.Vars(r)["memberid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse member ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Parse JSON
+	var mb member.Member
+	if err := json.NewDecoder(r.Body).Decode(&mb); err != nil {
+		logger.WithError(err).Error("Can't parse request body as member")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Check if path and body IDs match
+	if mb.ID != mid {
+		logger.WithFields(log.Fields{
+			"path": mid,
+			"body": mb.ID,
+		}).Error("Group IDs in path and body don't match")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Update member
+	if err := m.UpdateMember(gid, &mb); err != nil {
+		logger.WithError(err).Warn("Can't update member")
+
+		if _, ok := err.(*NotFoundError); ok {
+			rw.WriteHeader(http.StatusNotFound)
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+}
+
+func deleteMemberHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
+	logger := log.WithFields(log.Fields{
+		"uri":    r.URL,
+		"method": r.Method,
+	})
+
+	// Get group ID from request path
+	gid, err := uuid.Parse(mux.Vars(r)["groupid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse group ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Get member ID from request path
+	mid, err := uuid.Parse(mux.Vars(r)["memberid"])
+	if err != nil {
+		logger.WithError(err).Error("Can't parse member ID as UUID")
+		rw.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Remove member
+	if err := m.RemoveMember(gid, mid); err != nil {
+		logger.WithError(err).Warn("Can't update member")
+
+		if _, ok := err.(*NotFoundError); ok {
+			rw.WriteHeader(http.StatusNotFound)
+		} else if _, ok := err.(*BalanceError); ok {
+			rw.WriteHeader(http.StatusConflict)
+		} else {
+			rw.WriteHeader(http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	rw.WriteHeader(http.StatusNoContent)
 }
