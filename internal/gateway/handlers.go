@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -46,67 +45,23 @@ func ExpensesHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Req
 	}
 }
 
-// PaymentsHandler that publishes to an AMQP queue.
-func PaymentsHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Request) {
-	return func(rw http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case "POST":
-			postPaymentHandler(p, rw, r)
-			break
-		case "DELETE":
-			deletePaymentHandler(p, rw, r)
-		}
-	}
-}
-
 func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
 	logger := log.WithFields(log.Fields{
 		"uri":    r.URL,
 		"method": r.Method,
 	})
 
-	// Check if body is nil
-	if r.Body == nil {
-		logger.Warn("Request body is empty")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Read bytes from request's body
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logger.WithField("err", err).Warn("Can't read request body")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Parse JSON
+	// Decode JSON
 	var e expense.Expense
-	if err := json.Unmarshal(body, &e); err != nil {
-		logger.WithField("err", err).Warn("Can't parse request body as expense")
+	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
+		logger.WithError(err).Error("Can't parse request body as expense")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Check if group IDs in path and body match
-	if e.GroupID != mux.Vars(r)["groupid"] {
-		logger.WithField("id", e.GroupID).Warn("Group IDs in body and path don't match")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Check if expense, group and payer UUIDs are valid
-	if _, err := uuid.Parse(e.ID); err != nil {
-		logger.WithField("id", e.ID).Warn("Expense ID isn't valid UUID")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	} else if _, err := uuid.Parse(e.GroupID); err != nil {
-		logger.WithField("id", e.GroupID).Warn("Group ID isn't valid UUID")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	} else if _, err := uuid.Parse(e.Payer); err != nil {
-		logger.WithField("id", e.Payer).Warn("Payer ID isn't valid UUID")
+	if e.GroupID.String() != mux.Vars(r)["groupid"] {
+		logger.WithField("id", e.GroupID).Error("Group IDs in body and path don't match")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -115,10 +70,16 @@ func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 	rec := strings.Split(e.Recipients, ";")
 	for _, r := range rec {
 		if _, err := uuid.Parse(r); err != nil {
-			logger.WithField("id", r).Warn("Recipient ID isn't valid UUID")
+			logger.WithField("id", r).Error("Recipient ID isn't valid UUID")
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
+	}
+
+	// Encode JSON
+	body, err := json.Marshal(&e)
+	if err != nil {
+		logger.WithError(err).Error("Can't encode body")
 	}
 
 	// Create AMQP message
@@ -134,7 +95,7 @@ func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 
 	// Publish AMQP message
 	if err := p.Publish(&msg); err != nil {
-		logger.WithField("err", err).Warn("Can't publish AMQP message")
+		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
 		rw.WriteHeader(http.StatusAccepted)
@@ -151,15 +112,15 @@ func deleteExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 
 	// Check if group UUID is valid
 	if _, err := uuid.Parse(gid); err != nil {
-		logger.WithField("id", gid).Warn("Group ID isn't valid UUID")
+		logger.WithField("id", gid).Error("Group ID isn't valid UUID")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Encode JSON body
+	// Encode JSON
 	body, err := json.Marshal(&map[string]string{"group_id": gid})
 	if err != nil {
-		logger.WithField("err", err).Warn("Can't encode body")
+		logger.WithError(err).Error("Can't encode body")
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -175,11 +136,25 @@ func deleteExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 		Body:         body,
 	}
 
+	// Publish AMQP message
 	if err := p.Publish(&msg); err != nil {
-		logger.WithField("err", err).Warn("Can't publish AMQP message")
+		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
 		rw.WriteHeader(http.StatusAccepted)
+	}
+}
+
+// PaymentsHandler that publishes to an AMQP queue.
+func PaymentsHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Request) {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			postPaymentHandler(p, rw, r)
+			break
+		case "DELETE":
+			deletePaymentHandler(p, rw, r)
+		}
 	}
 }
 
@@ -189,54 +164,25 @@ func postPaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 		"method": r.Method,
 	})
 
-	// Check if body is nil
-	if r.Body == nil {
-		logger.Warn("Request body is empty")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Read bytes from request's body
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		logger.WithField("err", err).Warn("Can't read request body")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	// Parse JSON
+	// Decode JSON
 	var pay payment.Payment
-	if err := json.Unmarshal(body, &pay); err != nil {
-		logger.WithField("err", err).Warn("Can't parse request body as payment")
+	if err := json.NewDecoder(r.Body).Decode(&pay); err != nil {
+		logger.WithError(err).Error("Can't parse request body as payment")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// Check if group IDs in path and body match
-	if pay.GroupID != mux.Vars(r)["groupid"] {
-		logger.WithField("id", pay.GroupID).Warn("Group IDs in body and path don't match")
+	if pay.GroupID.String() != mux.Vars(r)["groupid"] {
+		logger.WithField("id", pay.GroupID).Error("Group IDs in body and path don't match")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Check if UUIDs are valid
-	if _, err := uuid.Parse(pay.ID); err != nil {
-		logger.WithField("id", pay.ID).Warn("Payment ID isn't valid UUID")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	} else if _, err := uuid.Parse(pay.GroupID); err != nil {
-		logger.WithField("id", pay.GroupID).Warn("Group ID isn't valid UUID")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	} else if _, err := uuid.Parse(pay.Payer); err != nil {
-		logger.WithField("id", pay.Payer).Warn("Payer ID isn't valid UUID")
-		rw.WriteHeader(http.StatusBadRequest)
-		return
-	} else if _, err := uuid.Parse(pay.Recipient); err != nil {
-		logger.WithField("id", pay.Recipient).Warn("Recipient ID isn't valid UUID")
-		rw.WriteHeader((http.StatusBadRequest))
-		return
+	// Encode JSON
+	body, err := json.Marshal(&pay)
+	if err != nil {
+		logger.WithError(err).Error("Can't encode body")
 	}
 
 	// Create AMQP message
@@ -252,7 +198,7 @@ func postPaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 
 	// Publish AMQP message
 	if err := p.Publish(&msg); err != nil {
-		logger.WithField("err", err).Warn("Can't publish AMQP message")
+		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
 		rw.WriteHeader(http.StatusAccepted)
@@ -269,15 +215,15 @@ func deletePaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 
 	// Check if group UUID is valid
 	if _, err := uuid.Parse(gid); err != nil {
-		logger.WithField("id", gid).Warn("Group ID isn't valid UUID")
+		logger.WithField("id", gid).Error("Group ID isn't valid UUID")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// Encode JSON body
+	// Encode JSON
 	body, err := json.Marshal(&map[string]string{"group_id": gid})
 	if err != nil {
-		logger.WithField("err", err).Warn("Can't encode body")
+		logger.WithError(err).Error("Can't encode body")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -293,8 +239,9 @@ func deletePaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 		Body:         body,
 	}
 
+	// Publish AMQP message
 	if err := p.Publish(&msg); err != nil {
-		logger.WithField("err", err).Warn("Can't publish AMQP message")
+		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
 		rw.WriteHeader(http.StatusAccepted)

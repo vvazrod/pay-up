@@ -34,10 +34,7 @@ func main() {
 	log.WithField("url", rabbit).Info("Connecting to AMQP server")
 	conn, err := amqp.Dial(rabbit)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"url": rabbit,
-			"err": err,
-		}).Fatal("AMQP server connection failure")
+		log.WithField("url", rabbit).WithError(err).Fatal("AMQP server connection failure")
 	}
 	defer conn.Close()
 
@@ -51,43 +48,31 @@ func main() {
 		log.WithFields(log.Fields{
 			"exchange": exchange,
 			"key":      key,
-			"err":      err,
-		}).Fatal("Can't create publisher")
+		}).WithError(err).Fatal("Can't create publisher")
 	}
 
 	// Create proxy
 	log.WithField("url", gmicro).Info("Creating reverse proxy")
 	url, err := url.Parse(gmicro)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"url": gmicro,
-			"err": err,
-		}).Fatal("Can't create reverse proxy")
+		log.WithField("url", gmicro).WithError(err).Fatal("Can't create reverse proxy")
 	}
 	proxy := httputil.NewSingleHostReverseProxy(url)
 
 	// Create router
 	r := mux.NewRouter().StrictSlash(true)
-	r.Use(loggingMiddleware) // add logging middleware
+	r.Use(gateway.LoggingMiddleware)
 	r.HandleFunc("/", gateway.StatusHandler).Methods("GET")
 	r.HandleFunc("/groups", gateway.ProxyHandler(proxy)).Methods("POST")
-	r.HandleFunc("/groups/{groupid}", gateway.ProxyHandler(proxy)).Methods("GET", "POST", "PUT", "DELETE")
+	r.HandleFunc("/groups/{groupid}", gateway.ProxyHandler(proxy)).Methods("GET", "PUT", "DELETE")
+	r.HandleFunc("/groups/{groupid}/members", gateway.ProxyHandler(proxy)).Methods("POST")
 	r.HandleFunc("/groups/{groupid}/members/{memberid}", gateway.ProxyHandler(proxy)).Methods("GET", "PUT", "DELETE")
 	r.HandleFunc("/groups/{groupid}/expenses", gateway.ExpensesHandler(pub)).Methods("POST", "DELETE")
 	r.HandleFunc("/groups/{groupid}/payments", gateway.PaymentsHandler(pub)).Methods("POST", "DELETE")
 
 	// Start HTTP server
-	log.WithField("port", 8080).Info("Starting server")
-	log.Fatal(http.ListenAndServe(":8080", r))
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		log.WithFields(log.Fields{
-			"uri":    r.URL,
-			"method": r.Method,
-		}).Info("Request received")
-
-		next.ServeHTTP(rw, r)
-	})
+	log.WithField("port", 8080).Info("Starting HTTP server")
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.WithError(err).Fatal("Server fail")
+	}
 }
