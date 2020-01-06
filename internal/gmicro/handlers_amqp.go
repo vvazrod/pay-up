@@ -2,17 +2,19 @@ package gmicro
 
 import (
 	"encoding/json"
-	"strings"
 
-	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/streadway/amqp"
 	"github.com/varrrro/pay-up/internal/tmicro/expense"
 	"github.com/varrrro/pay-up/internal/tmicro/payment"
 )
 
-// NewMessageHandler for AMQP messages.
-func NewMessageHandler(m Manager) func(*amqp.Delivery) {
+// MessageHandler for AMQP messages.
+func MessageHandler(m Manager) func(*amqp.Delivery) {
 	return func(msg *amqp.Delivery) {
+		log.WithField("operation", msg.Headers["operation"]).Info("AMQP message received")
+
 		switch msg.Headers["operation"] {
 		case "add-expense":
 			if err := addExpenseHandler(msg, m); err != nil {
@@ -49,33 +51,18 @@ func NewMessageHandler(m Manager) func(*amqp.Delivery) {
 }
 
 func addExpenseHandler(msg *amqp.Delivery, m Manager) error {
+	logger := log.WithField("operation", "add-expense")
+
+	// Decode JSON
 	var e expense.Expense
 	if err := json.Unmarshal(msg.Body, &e); err != nil {
+		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
 
-	groupid, err := uuid.Parse(e.GroupID)
-	if err != nil {
-		return err
-	}
-
-	payerid, err := uuid.Parse(e.Payer)
-	if err != nil {
-		return err
-	}
-
-	recipients := strings.Split(e.Recipients, ";")
-	var recids []uuid.UUID
-	for _, r := range recipients {
-		id, err := uuid.Parse(r)
-		if err != nil {
-			return err
-		}
-
-		recids = append(recids, id)
-	}
-
-	if err := m.AddExpense(e.Amount, groupid, payerid, &recids); err != nil {
+	// Add expense
+	if err := m.AddExpense(&e); err != nil {
+		logger.WithError(err).Error("Can't add expense")
 		return err
 	}
 
@@ -83,33 +70,18 @@ func addExpenseHandler(msg *amqp.Delivery, m Manager) error {
 }
 
 func deleteExpenseHandler(msg *amqp.Delivery, m Manager) error {
+	logger := log.WithField("operation", "add-expense")
+
+	// Decode JSON
 	var e expense.Expense
 	if err := json.Unmarshal(msg.Body, &e); err != nil {
+		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
 
-	groupid, err := uuid.Parse(e.GroupID)
-	if err != nil {
-		return err
-	}
-
-	payerid, err := uuid.Parse(e.Payer)
-	if err != nil {
-		return err
-	}
-
-	recipients := strings.Split(e.Recipients, ";")
-	var recids []uuid.UUID
-	for _, r := range recipients {
-		id, err := uuid.Parse(r)
-		if err != nil {
-			return err
-		}
-
-		recids = append(recids, id)
-	}
-
-	if err := m.RemoveExpense(e.Amount, groupid, payerid, &recids); err != nil {
+	// Remove expense
+	if err := m.RemoveExpense(&e); err != nil {
+		logger.WithError(err).Error("Can't remove expense")
 		return err
 	}
 
@@ -117,27 +89,18 @@ func deleteExpenseHandler(msg *amqp.Delivery, m Manager) error {
 }
 
 func addPaymentHandler(msg *amqp.Delivery, m Manager) error {
+	logger := log.WithField("operation", "add-expense")
+
+	// Decode JSON
 	var p payment.Payment
 	if err := json.Unmarshal(msg.Body, &p); err != nil {
+		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
 
-	groupid, err := uuid.Parse(p.GroupID)
-	if err != nil {
-		return err
-	}
-
-	payerid, err := uuid.Parse(p.Payer)
-	if err != nil {
-		return err
-	}
-
-	recipientid, err := uuid.Parse(p.Recipient)
-	if err != nil {
-		return err
-	}
-
-	if err := m.AddPayment(p.Amount, groupid, payerid, recipientid); err != nil {
+	// Add payment
+	if err := m.AddPayment(&p); err != nil {
+		logger.WithError(err).Error("Can't add payment")
 		return err
 	}
 
@@ -145,27 +108,18 @@ func addPaymentHandler(msg *amqp.Delivery, m Manager) error {
 }
 
 func deletePaymentHandler(msg *amqp.Delivery, m Manager) error {
+	logger := log.WithField("operation", "add-expense")
+
+	// Decode JSON
 	var p payment.Payment
 	if err := json.Unmarshal(msg.Body, &p); err != nil {
+		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
 
-	groupid, err := uuid.Parse(p.GroupID)
-	if err != nil {
-		return err
-	}
-
-	payerid, err := uuid.Parse(p.Payer)
-	if err != nil {
-		return err
-	}
-
-	recipientid, err := uuid.Parse(p.Recipient)
-	if err != nil {
-		return err
-	}
-
-	if err := m.RemovePayment(p.Amount, groupid, payerid, recipientid); err != nil {
+	// Remove payment
+	if err := m.RemovePayment(&p); err != nil {
+		logger.WithError(err).Error("Can't remove payment")
 		return err
 	}
 
