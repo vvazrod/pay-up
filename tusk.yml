@@ -13,12 +13,15 @@ tasks:
 
   build:
     usage: Compile the application
-    run: |
-      set -e
-      go build gmicro.go
-      mv gmicro /usr/local/bin/
+    args:
+      app:
+        usage: The application to compile
+    run: go build -o /usr/local/bin/${app} main.go
 
   run:
     usage: Run the application
-    run: supervisord -c /etc/supervisor/conf.d/gmicro.conf
+    args:
+      app:
+        usage: The application to run
+    run: supervisord -c /etc/supervisor/conf.d/${app}.conf
       
