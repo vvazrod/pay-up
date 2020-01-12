@@ -33,7 +33,8 @@ ENV CGO_ENABLED=0
 
 # Compile source files and delete them after the fact
 RUN tusk build tmicro \
-    && rm -f main.go && rm -rf internal/
+    && rm -f main.go && rm -rf internal/ \
+    && rm -f go.*
 
 # Copy service supervisor config
 COPY init/tmicro.conf /etc/supervisor/conf.d/
