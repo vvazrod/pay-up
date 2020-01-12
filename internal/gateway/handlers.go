@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/streadway/amqp"
 	"github.com/varrrro/pay-up/internal/publisher"
 	"github.com/varrrro/pay-up/internal/tmicro/expense"
 	"github.com/varrrro/pay-up/internal/tmicro/payment"
@@ -82,19 +81,8 @@ func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 		logger.WithError(err).Error("Can't encode body")
 	}
 
-	// Create AMQP message
-	msg := amqp.Publishing{
-		Headers: amqp.Table{
-			"operation": "add-expense",
-		},
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Priority:     1,
-		Body:         body,
-	}
-
 	// Publish AMQP message
-	if err := p.Publish(&msg); err != nil {
+	if err := p.Publish("add-expense", body, 2, 1); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -125,19 +113,8 @@ func deleteExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 		return
 	}
 
-	// Create AMQP message
-	msg := amqp.Publishing{
-		Headers: amqp.Table{
-			"operation": "delete-expense",
-		},
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Priority:     1,
-		Body:         body,
-	}
-
 	// Publish AMQP message
-	if err := p.Publish(&msg); err != nil {
+	if err := p.Publish("delete-expense", body, 2, 1); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -185,19 +162,8 @@ func postPaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 		logger.WithError(err).Error("Can't encode body")
 	}
 
-	// Create AMQP message
-	msg := amqp.Publishing{
-		Headers: amqp.Table{
-			"operation": "add-payment",
-		},
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Priority:     1,
-		Body:         body,
-	}
-
 	// Publish AMQP message
-	if err := p.Publish(&msg); err != nil {
+	if err := p.Publish("add-payment", body, 2, 1); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -228,19 +194,8 @@ func deletePaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 		return
 	}
 
-	// Create AMQP message
-	msg := amqp.Publishing{
-		Headers: amqp.Table{
-			"operation": "delete-payment",
-		},
-		ContentType:  "application/json",
-		DeliveryMode: 2,
-		Priority:     1,
-		Body:         body,
-	}
-
 	// Publish AMQP message
-	if err := p.Publish(&msg); err != nil {
+	if err := p.Publish("delete-payment", body, 2, 1); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {

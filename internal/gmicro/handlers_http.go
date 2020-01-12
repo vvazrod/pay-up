@@ -306,7 +306,7 @@ func putMemberHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
 		logger.WithFields(log.Fields{
 			"path": mid,
 			"body": mb.ID,
-		}).Error("Group IDs in path and body don't match")
+		}).Error("Member IDs in path and body don't match")
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -317,6 +317,8 @@ func putMemberHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
 
 		if _, ok := err.(*NotFoundError); ok {
 			rw.WriteHeader(http.StatusNotFound)
+		} else if _, ok := err.(*AlreadyPresentError); ok {
+			rw.WriteHeader(http.StatusConflict)
 		} else {
 			rw.WriteHeader(http.StatusInternalServerError)
 		}
@@ -351,7 +353,7 @@ func deleteMemberHandler(m Manager, rw http.ResponseWriter, r *http.Request) {
 
 	// Remove member
 	if err := m.RemoveMember(gid, mid); err != nil {
-		logger.WithError(err).Warn("Can't update member")
+		logger.WithError(err).Warn("Can't delete member")
 
 		if _, ok := err.(*NotFoundError); ok {
 			rw.WriteHeader(http.StatusNotFound)

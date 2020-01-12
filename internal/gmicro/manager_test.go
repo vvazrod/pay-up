@@ -16,6 +16,8 @@ func TestCreateGroup(t *testing.T) {
 	if err := gm.CreateGroup(&g); err != nil {
 		t.Errorf("Couldn't create group. Error: %s", err.Error())
 	}
+
+	clearDB()
 }
 
 func TestFetchGroup(t *testing.T) {
@@ -32,12 +34,16 @@ func TestFetchGroup(t *testing.T) {
 	} else if len(g2.Members) != 0 {
 		t.Error("Groups' members array isn't empty")
 	}
+
+	clearDB()
 }
 
 func TestFetchGroupNotFound(t *testing.T) {
 	if _, err := gm.FetchGroup(uuid.New()); err == nil {
 		t.Error("Fetching non-existant group didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestUpdateGroup(t *testing.T) {
@@ -58,6 +64,8 @@ func TestUpdateGroup(t *testing.T) {
 	} else if g2.Name != "updated" {
 		t.Error("Group's name wasn't updated correctly")
 	}
+
+	clearDB()
 }
 
 func TestUpdateGroupNotFound(t *testing.T) {
@@ -66,6 +74,8 @@ func TestUpdateGroupNotFound(t *testing.T) {
 	if err := gm.UpdateGroup(&g); err == nil {
 		t.Error("Updating non-existant group didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestRemoveGroup(t *testing.T) {
@@ -82,12 +92,16 @@ func TestRemoveGroup(t *testing.T) {
 	if _, err := gm.FetchGroup(g.ID); err == nil {
 		t.Error("Fetching group after deletion didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestRemoveGroupNotFound(t *testing.T) {
 	if err := gm.RemoveGroup(uuid.New()); err == nil {
 		t.Error("Deleting non-existant group didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestAddMember(t *testing.T) {
@@ -108,6 +122,8 @@ func TestAddMember(t *testing.T) {
 	} else if len(g.Members) != 1 {
 		t.Error("Member wasn't added to group correctly")
 	}
+
+	clearDB()
 }
 
 func TestAddMemberNotFound(t *testing.T) {
@@ -116,6 +132,8 @@ func TestAddMemberNotFound(t *testing.T) {
 	if err := gm.AddMember(uuid.New(), &m); err == nil {
 		t.Error("Adding member to non-existant group didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestAddMemberRepeated(t *testing.T) {
@@ -140,6 +158,8 @@ func TestAddMemberRepeated(t *testing.T) {
 	} else if len(g.Members) != 1 {
 		t.Error("Member was added to the group nonetheless")
 	}
+
+	clearDB()
 }
 
 func TestFetchMember(t *testing.T) {
@@ -160,6 +180,8 @@ func TestFetchMember(t *testing.T) {
 	} else if m2.ID != m.ID || m2.GroupID != g.ID {
 		t.Error("Returned member isn't correct")
 	}
+
+	clearDB()
 }
 
 func TestFetchMemberNotFound(t *testing.T) {
@@ -172,6 +194,8 @@ func TestFetchMemberNotFound(t *testing.T) {
 	if _, err := gm.FetchMember(g.ID, uuid.New()); err == nil {
 		t.Error("Fetching non-existant member didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestUpdateMember(t *testing.T) {
@@ -198,6 +222,8 @@ func TestUpdateMember(t *testing.T) {
 	} else if m2.Name != "updated" {
 		t.Error("Member's name wasn't updated correctly")
 	}
+
+	clearDB()
 }
 
 func TestUpdateMemberNotFound(t *testing.T) {
@@ -212,6 +238,8 @@ func TestUpdateMemberNotFound(t *testing.T) {
 	if err := gm.UpdateMember(g.ID, &m); err == nil {
 		t.Error("Updating non-existant member didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestUpdateMemberAlreadyPresent(t *testing.T) {
@@ -244,6 +272,8 @@ func TestUpdateMemberAlreadyPresent(t *testing.T) {
 	} else if m3.Name == "inuse" {
 		t.Error("Member's name was updated nonetheless")
 	}
+
+	clearDB()
 }
 
 func TestRemoveMember(t *testing.T) {
@@ -272,6 +302,8 @@ func TestRemoveMember(t *testing.T) {
 	} else if len(g2.Members) != 0 {
 		t.Error("Member wasn't removed from group correctly")
 	}
+
+	clearDB()
 }
 
 func TestRemoveMemberNotFound(t *testing.T) {
@@ -284,6 +316,8 @@ func TestRemoveMemberNotFound(t *testing.T) {
 	if err := gm.RemoveMember(g.ID, uuid.New()); err == nil {
 		t.Error("Deleting non-existant member didn't return an error")
 	}
+
+	clearDB()
 }
 
 func TestAddExpense(t *testing.T) {
@@ -339,6 +373,8 @@ func TestAddExpense(t *testing.T) {
 	} else if m3.Balance != -11.65 {
 		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -11.65, m3.Balance)
 	}
+
+	clearDB()
 }
 
 func TestRemoveExpense(t *testing.T) {
@@ -394,6 +430,8 @@ func TestRemoveExpense(t *testing.T) {
 	} else if m3.Balance != 11.65 {
 		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 11.65, m3.Balance)
 	}
+
+	clearDB()
 }
 
 func TestAddPayment(t *testing.T) {
@@ -437,6 +475,8 @@ func TestAddPayment(t *testing.T) {
 	} else if m2.Balance != -25.3 {
 		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", -25.3, m2.Balance)
 	}
+
+	clearDB()
 }
 
 func TestRemovePayment(t *testing.T) {
@@ -480,4 +520,6 @@ func TestRemovePayment(t *testing.T) {
 	} else if m2.Balance != 25.3 {
 		t.Errorf("Balance wasn't updated correctly. [Expected]: %f [Actual]: %f", 25.3, m2.Balance)
 	}
+
+	clearDB()
 }
