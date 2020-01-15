@@ -2,60 +2,42 @@ package gmicro
 
 import (
 	"encoding/json"
+	"errors"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/streadway/amqp"
 	"github.com/varrrro/pay-up/internal/tmicro/expense"
 	"github.com/varrrro/pay-up/internal/tmicro/payment"
 )
 
 // MessageHandler for AMQP messages.
-func MessageHandler(m Manager) func(*amqp.Delivery) {
-	return func(msg *amqp.Delivery) {
-		log.WithField("operation", msg.Headers["operation"]).Info("AMQP message received")
+func MessageHandler(m Manager) func(string, []byte) error {
+	return func(op string, body []byte) error {
+		log.WithField("operation", op).Info("AMQP message received")
 
-		switch msg.Headers["operation"] {
+		switch op {
 		case "add-expense":
-			if err := addExpenseHandler(msg, m); err != nil {
-				msg.Reject(false)
-			} else {
-				msg.Ack(false)
-			}
-			break
+			return addExpenseHandler(body, m)
 		case "delete-expense":
-			if err := deleteExpenseHandler(msg, m); err != nil {
-				msg.Reject(false)
-			} else {
-				msg.Ack(false)
-			}
-			break
+			return deleteExpenseHandler(body, m)
 		case "add-payment":
-			if err := addPaymentHandler(msg, m); err != nil {
-				msg.Reject(false)
-			} else {
-				msg.Ack(false)
-			}
-			break
+			return addPaymentHandler(body, m)
 		case "delete-payment":
-			if err := deletePaymentHandler(msg, m); err != nil {
-				msg.Reject(false)
-			} else {
-				msg.Ack(false)
-			}
-			break
+			return deletePaymentHandler(body, m)
 		default:
-			msg.Reject(false)
+			err := errors.New("Wrong operation type")
+			log.WithError(err).Warn("Can't handle message")
+			return err
 		}
 	}
 }
 
-func addExpenseHandler(msg *amqp.Delivery, m Manager) error {
+func addExpenseHandler(body []byte, m Manager) error {
 	logger := log.WithField("operation", "add-expense")
 
 	// Decode JSON
 	var e expense.Expense
-	if err := json.Unmarshal(msg.Body, &e); err != nil {
+	if err := json.Unmarshal(body, &e); err != nil {
 		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
@@ -69,12 +51,12 @@ func addExpenseHandler(msg *amqp.Delivery, m Manager) error {
 	return nil
 }
 
-func deleteExpenseHandler(msg *amqp.Delivery, m Manager) error {
-	logger := log.WithField("operation", "add-expense")
+func deleteExpenseHandler(body []byte, m Manager) error {
+	logger := log.WithField("operation", "delete-expense")
 
 	// Decode JSON
 	var e expense.Expense
-	if err := json.Unmarshal(msg.Body, &e); err != nil {
+	if err := json.Unmarshal(body, &e); err != nil {
 		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
@@ -88,12 +70,12 @@ func deleteExpenseHandler(msg *amqp.Delivery, m Manager) error {
 	return nil
 }
 
-func addPaymentHandler(msg *amqp.Delivery, m Manager) error {
-	logger := log.WithField("operation", "add-expense")
+func addPaymentHandler(body []byte, m Manager) error {
+	logger := log.WithField("operation", "add-payment")
 
 	// Decode JSON
 	var p payment.Payment
-	if err := json.Unmarshal(msg.Body, &p); err != nil {
+	if err := json.Unmarshal(body, &p); err != nil {
 		logger.WithError(err).Error("Can't decode body")
 		return err
 	}
@@ -107,12 +89,12 @@ func addPaymentHandler(msg *amqp.Delivery, m Manager) error {
 	return nil
 }
 
-func deletePaymentHandler(msg *amqp.Delivery, m Manager) error {
-	logger := log.WithField("operation", "add-expense")
+func deletePaymentHandler(body []byte, m Manager) error {
+	logger := log.WithField("operation", "delete-payment")
 
 	// Decode JSON
 	var p payment.Payment
-	if err := json.Unmarshal(msg.Body, &p); err != nil {
+	if err := json.Unmarshal(body, &p); err != nil {
 		logger.WithError(err).Error("Can't decode body")
 		return err
 	}

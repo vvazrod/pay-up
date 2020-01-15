@@ -14,6 +14,7 @@ import (
 
 var db *gorm.DB
 var gm *gmicro.GroupsManager
+var h func(op string, body []byte) error
 var r *mux.Router
 
 func TestMain(m *testing.M) {
@@ -25,6 +26,10 @@ func TestMain(m *testing.M) {
 	// Create manager with test DB connection
 	gm = gmicro.NewManager(db)
 
+	// Create AMQP message handler
+	h = gmicro.MessageHandler(gm)
+
+	// Create router
 	r = mux.NewRouter().StrictSlash(true)
 	r.Use(gmicro.ContentTypeMiddleware)
 	r.HandleFunc("/", gmicro.StatusHandler).Methods("GET")

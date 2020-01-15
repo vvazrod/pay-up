@@ -65,7 +65,7 @@ func New(conn *amqp.Connection, exchange, queue, tag string) (*Consumer, error) 
 // Start consuming messages with the given handler.
 //
 // Based on https://codereview.stackexchange.com/a/199894
-func (c *Consumer) Start(ctx context.Context, handle func(*amqp.Delivery)) error {
+func (c *Consumer) Start(ctx context.Context, handle func(string, []byte) error) error {
 	ch, err := c.conn.Channel()
 	if err != nil {
 		return err
@@ -90,7 +90,16 @@ func (c *Consumer) Start(ctx context.Context, handle func(*amqp.Delivery)) error
 		case <-ctx.Done():
 			return
 		case msg := <-msgs:
-			handle(&msg)
+			op, ok := msg.Headers["operation"]
+			if !ok {
+				msg.Nack(false, false)
+			}
+
+			if err := handle(op.(string), msg.Body); err != nil {
+				msg.Nack(false, false)
+			} else {
+				msg.Ack(false)
+			}
 		}
 	}()
 
