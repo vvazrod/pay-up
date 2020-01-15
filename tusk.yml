@@ -16,12 +16,12 @@ tasks:
     args:
       app:
         usage: The application to compile
-    run: go build -o /usr/local/bin/${app} main.go
+    run: go build -o /usr/local/bin/${app} ./cmd/${app}/main.go
 
   run:
     usage: Run the application
     args:
       app:
         usage: The application to run
-    run: supervisord -c /etc/supervisor/conf.d/${app}.conf
+    run: supervisord -c ./init/${app}.conf
       

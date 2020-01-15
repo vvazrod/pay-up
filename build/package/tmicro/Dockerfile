@@ -1,43 +1,38 @@
-FROM golang:1.13-alpine3.10
+#--------------------#
+# Build stage
+#--------------------#
+FROM golang:1.13-alpine3.10 AS build
 
-# Set the maintainer of this image
-LABEL maintainer="Víctor Vázquez <victorvazrod@correo.ugr.es>"
-
-# Establish the working directory
-WORKDIR /app
-
-# Install supervisor and other build dependencies, clean up after the fact
+# Install needed utilities
 RUN apk update \
-    && apk add --no-cache supervisor \
-    && apk add --no-cache --virtual .build-deps \
-        git \
-        curl \
-        bash \
-    && curl -sL https://git.io/tusk | bash -s -- -b /usr/local/bin latest \
-    && apk del .build-deps
+    && apk add --no-cache supervisor git curl bash \
+    && curl -sL https://git.io/tusk | bash -s -- -b /usr/local/bin latest
 
 # Copy task runner config and module files
-COPY tusk.yml go.mod go.sum ./
+COPY tusk.yml go.mod go.sum /src/
 
 # Install project dependencies
-RUN tusk install
+RUN cd /src && tusk install
 
 # Copy source files
-COPY cmd/tmicro/main.go .
-COPY internal/tmicro/ internal/tmicro/
-COPY internal/consumer/ internal/consumer/
-COPY internal/publisher/ internal/publisher/
+COPY cmd/tmicro/main.go /src/cmd/tmicro/
+COPY internal/tmicro/ /src/internal/tmicro/
+COPY internal/consumer/ /src/internal/consumer/
+COPY internal/publisher/ /src/internal/publisher/
 
 # Disable CGO
 ENV CGO_ENABLED=0
 
-# Compile source files and delete them after the fact
-RUN tusk build tmicro \
-    && rm -f main.go && rm -rf internal/ \
-    && rm -f go.*
+# Build binary
+RUN cd /src && tusk build tmicro
 
-# Copy service supervisor config
-COPY init/tmicro.conf /etc/supervisor/conf.d/
+#--------------------#
+# Deployment stage
+#--------------------#
+FROM alpine:3.10
+LABEL maintainer="Víctor Vázquez <victorvazrod@correo.ugr.es>"
+WORKDIR /app
 
-# Run the application
-CMD [ "tusk", "run", "tmicro" ]
+# Copy binary from build stage
+COPY --from=build /usr/local/bin/tmicro /app/
+ENTRYPOINT ./tmicro
