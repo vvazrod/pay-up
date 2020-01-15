@@ -52,16 +52,19 @@ func TestMessageHandler(t *testing.T) {
 		fail bool
 	}{
 		{"add-expense", ebody1, false},
-		{"add-expense", []byte(`{"ID":"test"}`), true},
+		{"add-expense", []byte(`{"id":"test"}`), true},
 		{"add-expense", ebody2, true},
+
 		{"delete-expense", ebody1, false},
-		{"delete-expense", []byte(`{"ID":"test"}`), true},
+		{"delete-expense", []byte(`{"id":"test"}`), true},
 		{"delete-expense", ebody2, true},
+
 		{"add-payment", pbody1, false},
-		{"add-payment", []byte(`{"ID":"test"}`), true},
+		{"add-payment", []byte(`{"id":"test"}`), true},
 		{"add-payment", pbody2, true},
+
 		{"delete-payment", pbody1, false},
-		{"delete-payment", []byte(`{"ID":"test"}`), true},
+		{"delete-payment", []byte(`{"id":"test"}`), true},
 		{"delete-payment", pbody2, true},
 	}
 

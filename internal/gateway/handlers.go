@@ -32,7 +32,7 @@ func ProxyHandler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Requ
 }
 
 // ExpensesHandler that publishes to an AMQP queue.
-func ExpensesHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Request) {
+func ExpensesHandler(p publisher.Publisher) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
@@ -44,7 +44,7 @@ func ExpensesHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Req
 	}
 }
 
-func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
+func postExpenseHandler(p publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
 	logger := log.WithFields(log.Fields{
 		"uri":    r.URL,
 		"method": r.Method,
@@ -82,7 +82,7 @@ func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 	}
 
 	// Publish AMQP message
-	if err := p.Publish("add-expense", body, 2, 1); err != nil {
+	if err := p.Publish("add-expense", body); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -90,7 +90,7 @@ func postExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 	}
 }
 
-func deleteExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
+func deleteExpenseHandler(p publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
 	logger := log.WithFields(log.Fields{
 		"uri":    r.URL,
 		"method": r.Method,
@@ -114,7 +114,7 @@ func deleteExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 	}
 
 	// Publish AMQP message
-	if err := p.Publish("delete-expense", body, 2, 1); err != nil {
+	if err := p.Publish("delete-expense", body); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -123,7 +123,7 @@ func deleteExpenseHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 }
 
 // PaymentsHandler that publishes to an AMQP queue.
-func PaymentsHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Request) {
+func PaymentsHandler(p publisher.Publisher) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
@@ -135,7 +135,7 @@ func PaymentsHandler(p *publisher.Publisher) func(http.ResponseWriter, *http.Req
 	}
 }
 
-func postPaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
+func postPaymentHandler(p publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
 	logger := log.WithFields(log.Fields{
 		"uri":    r.URL,
 		"method": r.Method,
@@ -163,7 +163,7 @@ func postPaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 	}
 
 	// Publish AMQP message
-	if err := p.Publish("add-payment", body, 2, 1); err != nil {
+	if err := p.Publish("add-payment", body); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -171,7 +171,7 @@ func postPaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.
 	}
 }
 
-func deletePaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
+func deletePaymentHandler(p publisher.Publisher, rw http.ResponseWriter, r *http.Request) {
 	logger := log.WithFields(log.Fields{
 		"uri":    r.URL,
 		"method": r.Method,
@@ -195,7 +195,7 @@ func deletePaymentHandler(p *publisher.Publisher, rw http.ResponseWriter, r *htt
 	}
 
 	// Publish AMQP message
-	if err := p.Publish("delete-payment", body, 2, 1); err != nil {
+	if err := p.Publish("delete-payment", body); err != nil {
 		logger.WithError(err).Warn("Can't publish AMQP message")
 		rw.WriteHeader(http.StatusInternalServerError)
 	} else {

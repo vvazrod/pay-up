@@ -14,7 +14,7 @@ import (
 
 var db *gorm.DB
 var gm *gmicro.GroupsManager
-var h func(op string, body []byte) error
+var h func(string, []byte) error
 var r *mux.Router
 
 func TestMain(m *testing.M) {

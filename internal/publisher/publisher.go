@@ -5,14 +5,27 @@ import (
 )
 
 // Publisher of AMQP messages.
-type Publisher struct {
+type Publisher interface {
+	Publish(op string, body []byte) error
+}
+
+// MockPublisher used in tests.
+type MockPublisher func(op string, body []byte) error
+
+// Publish function that calls the mock function.
+func (p MockPublisher) Publish(op string, body []byte) error {
+	return p(op, body)
+}
+
+// AMQPPublisher implementation.
+type AMQPPublisher struct {
 	conn     *amqp.Connection
 	exchange string
 	key      string
 }
 
-// New Publisher instance.
-func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
+// New AMQPPublisher instance.
+func New(conn *amqp.Connection, exchange, key string) (*AMQPPublisher, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		return nil, err
@@ -31,7 +44,7 @@ func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
 		return nil, err
 	}
 
-	return &Publisher{
+	return &AMQPPublisher{
 		conn:     conn,
 		exchange: exchange,
 		key:      key,
@@ -39,7 +52,7 @@ func New(conn *amqp.Connection, exchange, key string) (*Publisher, error) {
 }
 
 // Publish a message to the publisher's exchange with the given routing key.
-func (p *Publisher) Publish(op string, body []byte, dmode, prio uint8) error {
+func (p *AMQPPublisher) Publish(op string, body []byte) error {
 	ch, err := p.conn.Channel()
 	if err != nil {
 		return err
@@ -50,8 +63,8 @@ func (p *Publisher) Publish(op string, body []byte, dmode, prio uint8) error {
 			"operation": op,
 		},
 		ContentType:  "application/json",
-		DeliveryMode: dmode,
-		Priority:     prio,
+		DeliveryMode: 2,
+		Priority:     1,
 		Body:         body,
 	}
 
