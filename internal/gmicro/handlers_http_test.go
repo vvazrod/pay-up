@@ -105,11 +105,13 @@ func TestGroupHandler(t *testing.T) {
 		{"GET", g.ID.String(), nil, http.StatusOK, &g},
 		{"GET", "test", nil, http.StatusBadRequest, nil},
 		{"GET", uuid.New().String(), nil, http.StatusNotFound, nil},
+
 		{"PUT", g.ID.String(), body1, http.StatusOK, nil},
 		{"PUT", "test", body1, http.StatusBadRequest, nil},
 		{"PUT", g.ID.String(), []byte(""), http.StatusBadRequest, nil},
 		{"PUT", uuid.New().String(), body1, http.StatusBadRequest, nil},
 		{"PUT", g3.ID.String(), body2, http.StatusNotFound, nil},
+
 		{"DELETE", g.ID.String(), nil, http.StatusNoContent, nil},
 		{"DELETE", "test", nil, http.StatusBadRequest, nil},
 		{"DELETE", g3.ID.String(), nil, http.StatusNotFound, nil},
@@ -233,12 +235,14 @@ func TestMemberHandler(t *testing.T) {
 		{"GET", g.ID.String(), "test", nil, http.StatusBadRequest, &m},
 		{"GET", uuid.New().String(), m.ID.String(), nil, http.StatusNotFound, &m},
 		{"GET", g.ID.String(), uuid.New().String(), nil, http.StatusNotFound, &m},
+
 		{"PUT", g.ID.String(), m.ID.String(), body, http.StatusOK, nil},
 		{"PUT", "test", m.ID.String(), body, http.StatusBadRequest, nil},
 		{"PUT", g.ID.String(), "test", body, http.StatusBadRequest, nil},
 		{"PUT", g.ID.String(), uuid.New().String(), body, http.StatusBadRequest, nil},
 		{"PUT", uuid.New().String(), m.ID.String(), body, http.StatusNotFound, nil},
 		{"PUT", g.ID.String(), m.ID.String(), body, http.StatusConflict, nil},
+
 		{"DELETE", g.ID.String(), m.ID.String(), nil, http.StatusNoContent, nil},
 		{"DELETE", "test", m.ID.String(), nil, http.StatusBadRequest, nil},
 		{"DELETE", g.ID.String(), "test", nil, http.StatusBadRequest, nil},

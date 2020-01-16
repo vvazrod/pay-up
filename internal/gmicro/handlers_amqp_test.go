@@ -66,6 +66,8 @@ func TestMessageHandler(t *testing.T) {
 		{"delete-payment", pbody1, false},
 		{"delete-payment", []byte(`{"id":"test"}`), true},
 		{"delete-payment", pbody2, true},
+
+		{"test", nil, true},
 	}
 
 	for _, tc := range cases {

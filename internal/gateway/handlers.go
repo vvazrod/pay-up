@@ -19,8 +19,8 @@ import (
 func StatusHandler(rw http.ResponseWriter, r *http.Request) {
 	status := map[string]string{"status": "OK"}
 
-	rw.WriteHeader(http.StatusOK)
 	rw.Header().Add("Content-Type", "application/json")
+	rw.WriteHeader(http.StatusOK)
 	json.NewEncoder(rw).Encode(&status)
 }
 

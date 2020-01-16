@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 
 	// Create router
 	r = mux.NewRouter().StrictSlash(true)
-	r.Use(gmicro.ContentTypeMiddleware)
+	r.Use(gmicro.LoggingMiddleware, gmicro.ContentTypeMiddleware)
 	r.HandleFunc("/", gmicro.StatusHandler).Methods("GET")
 	r.HandleFunc("/groups", gmicro.GroupsHandler(gm)).Methods("POST")
 	r.HandleFunc("/groups/{groupid}", gmicro.GroupHandler(gm)).Methods("GET", "PUT", "DELETE")

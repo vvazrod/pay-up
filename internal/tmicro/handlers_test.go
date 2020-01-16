@@ -52,6 +52,8 @@ func TestMessageHandler(t *testing.T) {
 		{"delete-payment", []byte(`{}`), true},
 		{"delete-payment", []byte(`{"group_id":"test"}`), true},
 		{"delete-payment", []byte(`{"group_id":"` + uuid.New().String() + `"}`), true},
+
+		{"test", nil, true},
 	}
 
 	for _, tc := range cases {
