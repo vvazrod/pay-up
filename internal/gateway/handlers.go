@@ -96,7 +96,7 @@ func deleteExpenseHandler(p publisher.Publisher, rw http.ResponseWriter, r *http
 		"method": r.Method,
 	})
 
-	gid := mux.Vars(r)["group_id"]
+	gid := mux.Vars(r)["groupid"]
 
 	// Check if group UUID is valid
 	if _, err := uuid.Parse(gid); err != nil {
@@ -177,7 +177,7 @@ func deletePaymentHandler(p publisher.Publisher, rw http.ResponseWriter, r *http
 		"method": r.Method,
 	})
 
-	gid := mux.Vars(r)["group_id"]
+	gid := mux.Vars(r)["groupid"]
 
 	// Check if group UUID is valid
 	if _, err := uuid.Parse(gid); err != nil {

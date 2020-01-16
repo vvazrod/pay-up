@@ -89,6 +89,11 @@ func TestExpensesHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			res := rec.Result() // get response
 			defer res.Body.Close()
+
+			// Check response status code
+			if res.StatusCode != tc.statusCode {
+				t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, res.StatusCode)
+			}
 		})
 	}
 }
@@ -123,9 +128,9 @@ func TestPaymentsHandler(t *testing.T) {
 			var req *http.Request
 			var err error
 			if tc.method == "POST" {
-				req, err = http.NewRequest(tc.method, "/groups/"+tc.gid+"/expenses", bytes.NewBuffer(tc.reqBody))
+				req, err = http.NewRequest(tc.method, "/groups/"+tc.gid+"/payments", bytes.NewBuffer(tc.reqBody))
 			} else {
-				req, err = http.NewRequest(tc.method, "/groups/"+tc.gid+"/expenses", nil)
+				req, err = http.NewRequest(tc.method, "/groups/"+tc.gid+"/payments", nil)
 			}
 			if err != nil {
 				t.Errorf("Can't create request [Error]: %v", err)
@@ -136,6 +141,11 @@ func TestPaymentsHandler(t *testing.T) {
 			r.ServeHTTP(rec, req)
 			res := rec.Result() // get response
 			defer res.Body.Close()
+
+			// Check response status code
+			if res.StatusCode != tc.statusCode {
+				t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, res.StatusCode)
+			}
 		})
 	}
 }
