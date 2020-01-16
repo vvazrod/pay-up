@@ -79,6 +79,8 @@ func postExpenseHandler(p publisher.Publisher, rw http.ResponseWriter, r *http.R
 	body, err := json.Marshal(&e)
 	if err != nil {
 		logger.WithError(err).Error("Can't encode body")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Publish AMQP message
@@ -160,6 +162,8 @@ func postPaymentHandler(p publisher.Publisher, rw http.ResponseWriter, r *http.R
 	body, err := json.Marshal(&pay)
 	if err != nil {
 		logger.WithError(err).Error("Can't encode body")
+		rw.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Publish AMQP message
