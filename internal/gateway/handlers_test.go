@@ -92,7 +92,7 @@ func TestExpensesHandler(t *testing.T) {
 
 			// Check response status code
 			if res.StatusCode != tc.statusCode {
-				t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, res.StatusCode)
+				t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", tc.statusCode, res.StatusCode)
 			}
 		})
 	}
@@ -144,7 +144,7 @@ func TestPaymentsHandler(t *testing.T) {
 
 			// Check response status code
 			if res.StatusCode != tc.statusCode {
-				t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", http.StatusOK, res.StatusCode)
+				t.Errorf("Wrong status code [Expected]: %d [Actual]: %d", tc.statusCode, res.StatusCode)
 			}
 		})
 	}
