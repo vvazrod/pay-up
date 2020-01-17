@@ -29,11 +29,12 @@ func init() {
 }
 
 func main() {
-	rabbit := "amqp://guest:guest@rabbit:5672"
-	dbconn := "host=db-gmicro port=5432 user=gmicro dbname=gmicro password=gmicro sslmode=disable"
-	exchange := "transactions"
-	queue := "balance"
-	ctag := "gmicro"
+	rabbit := os.Getenv("RABBIT_CONN")
+	dbtype := os.Getenv("DB_TYPE")
+	dbconn := os.Getenv("DB_CONN")
+	exchange := os.Getenv("EXCHANGE")
+	queue := os.Getenv("QUEUE")
+	ctag := os.Getenv("CTAG")
 
 	// Open AMQP connection
 	log.WithField("url", rabbit).Info("Connecting to AMQP server")
@@ -45,10 +46,10 @@ func main() {
 
 	// Open database connection
 	log.WithFields(log.Fields{
-		"db":  "sqlite3",
+		"db":  dbtype,
 		"url": dbconn,
 	}).Info("Connecting to database")
-	db, err := gorm.Open("postgres", dbconn)
+	db, err := gorm.Open(dbtype, dbconn)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"url": dbconn,
@@ -57,8 +58,8 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create tables
-	db.CreateTable(&group.Group{}, &member.Member{})
+	// Check if database schema is correct
+	checkSchema(db)
 
 	// Create data manager using database connection
 	gm := gmicro.NewManager(db)
@@ -97,5 +98,15 @@ func main() {
 	log.WithField("port", 8080).Info("Starting HTTP server")
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.WithError(err).Fatal("Server fail")
+	}
+}
+
+func checkSchema(db *gorm.DB) {
+	if !db.HasTable(&group.Group{}) {
+		db.CreateTable(&group.Group{})
+	}
+
+	if !db.HasTable(&member.Member{}) {
+		db.CreateTable(&member.Member{})
 	}
 }

@@ -1,0 +1,76 @@
+version: "3.7"
+
+services: 
+    gateway:
+        image: varrrro/pay-up:gateway
+        ports: 
+            - "8080:8080"
+        networks:
+            - main
+        environment: 
+            - RABBIT_CONN=${RABBIT_CONN}
+            - PROXY_URL=${GMICRO_URL}
+            - EXCHANGE=${GATE_EXCHANGE}
+            - KEY=${GATE_KEY}
+        depends_on:
+            - rabbit
+            - gmicro
+            - tmicro
+
+    gmicro:
+        image: varrrro/pay-up:gmicro
+        networks: 
+            - main
+        environment: 
+            - RABBIT_CONN=${RABBIT_CONN}
+            - DB_TYPE=${GMICRO_DBTYPE}
+            - DB_CONN=${GMICRO_DBCONN}
+            - EXCHANGE=${GMICRO_EXCHANGE}
+            - QUEUE=${GMICRO_QUEUE}
+            - CTAG=${GMICRO_CTAG}
+        depends_on: 
+            - rabbit
+            - db-gmicro
+
+    tmicro:
+        image: varrrro/pay-up:tmicro
+        networks: 
+            - main
+        environment: 
+            - RABBIT_CONN=${RABBIT_CONN}
+            - DB_TYPE=${TMICRO_DBTYPE}
+            - DB_CONN=${TMICRO_DBCONN}
+            - EXCHANGE=${TMICRO_EXCHANGE}
+            - KEY=${TMICRO_KEY}
+            - QUEUE=${TMICRO_QUEUE}
+            - CTAG=${TMICRO_CTAG}
+        depends_on: 
+            - rabbit
+            - db-tmicro
+
+    rabbit:
+        image: rabbitmq:3
+        networks: 
+            - main
+
+    db-gmicro:
+        image: postgres:12
+        networks:
+            - main
+        environment:
+            - POSTGRES_USER=${GMICRO_DB_USER}
+            - POSTGRES_PASSWORD=${GMICRO_DB_PASS}
+            - POSTGRES_DB=${GMICRO_DB_NAME}
+
+    db-tmicro:
+        image: postgres:12
+        networks:
+            - main
+        environment:
+            - POSTGRES_USER=${TMICRO_DB_USER}
+            - POSTGRES_PASSWORD=${TMICRO_DB_PASS}
+            - POSTGRES_DB=${TMICRO_DB_NAME}
+
+networks:
+    main:
+        driver: bridge

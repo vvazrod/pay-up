@@ -1,11 +1,12 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
 	"github.com/streadway/amqp"
@@ -25,10 +26,10 @@ func init() {
 }
 
 func main() {
-	rabbit := "amqp://guest:guest@rabbit:5672"
-	gmicro := "http://gmicro:8080"
-	exchange := "transactions"
-	key := "management"
+	rabbit := os.Getenv("RABBIT_CONN")
+	gmicro := os.Getenv("PROXY_URL")
+	exchange := os.Getenv("EXCHANGE")
+	key := os.Getenv("KEY")
 
 	// Open AMQP connection
 	log.WithField("url", rabbit).Info("Connecting to AMQP server")

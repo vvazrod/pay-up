@@ -13,3 +13,6 @@
 
 # Coverage report
 coverage.txt
+
+# Environment variables
+.env

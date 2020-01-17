@@ -29,12 +29,13 @@ func init() {
 }
 
 func main() {
-	rabbit := "amqp://guest:guest@rabbit:5672"
-	dbconn := "host=db-tmicro port=5432 user=tmicro dbname=tmicro password=tmicro sslmode=disable"
-	exchange := "transactions"
-	key := "balance"
-	queue := "management"
-	ctag := "tmicro"
+	rabbit := os.Getenv("RABBIT_CONN")
+	dbtype := os.Getenv("DB_TYPE")
+	dbconn := os.Getenv("DB_CONN")
+	exchange := os.Getenv("EXCHANGE")
+	key := os.Getenv("KEY")
+	queue := os.Getenv("QUEUE")
+	ctag := os.Getenv("CTAG")
 
 	// Open AMQP connection
 	log.WithField("url", rabbit).Info("Connecting to AMQP server")
@@ -49,10 +50,10 @@ func main() {
 
 	// Open database connection
 	log.WithFields(log.Fields{
-		"db":  "sqlite3",
+		"db":  dbtype,
 		"url": dbconn,
 	}).Info("Connecting to database")
-	db, err := gorm.Open("postgres", dbconn)
+	db, err := gorm.Open(dbtype, dbconn)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"url": dbconn,
@@ -61,8 +62,8 @@ func main() {
 	}
 	defer db.Close()
 
-	// Create tables
-	db.CreateTable(&expense.Expense{}, &payment.Payment{})
+	// Check if database schema is correct
+	checkSchema(db)
 
 	// Create data manager
 	tm := tmicro.NewManager(db)
@@ -109,4 +110,14 @@ func main() {
 	c.Start(ctx, tmicro.MessageHandler(tm, pub)) // start consumer
 
 	<-sch // blocking until we receive a signal
+}
+
+func checkSchema(db *gorm.DB) {
+	if !db.HasTable(&expense.Expense{}) {
+		db.CreateTable(&expense.Expense{})
+	}
+
+	if !db.HasTable(&payment.Payment{}) {
+		db.CreateTable(&payment.Payment{})
+	}
 }
