@@ -73,7 +73,33 @@ CMD [ "tusk", "run" ]
 
 Por último, copiamos el fichero de configuración del proceso que usará `supervisord` para lanzarlo y controlarlo, exponemos el puerto del contenedor que va a recibir las peticiones y, con `CMD`, definimos el comando que se ejecuta dentro del contenedor cuando éste se lance (con `docker run`, por ejemplo). En nuestro caso, `tusk run` iniciará el microservicio a través de `supervisord`.
 
-## Actualización a construcción multifase
+## Comparación de imágenes base
+
+A parte de la imagen Alpine que se ha decidido usar como base, Go ofrece otras imágenes oficiales basadas en Debian Buster y Stretch. A continuación, vamos a comparar estas imágenes para ver por qué se ha elegido Alpine.
+
+Construyendo las imágenes y usando `docker image ls` vemos los tamaños de cada una.
+
+```
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+gmicro-buster       latest              0186d16baa32        21 seconds ago      1.25GB
+gmicro-stretch      latest              f79f68504c7b        2 minutes ago       1.2GB
+gmicro-alpine       latest              b612a5a195e6        6 minutes ago       787MB
+```
+
+Como se puede ver, la imagen basada en Alpine es considerablemente más pequeña que las otras dos, con 787MB de tamaño.
+
+Para comparar el rendimiento de las imágenes, usamos la herramienta Apache Benchmark para realizar unas pruebas sencillas de carga. Con el comando `ab -n 10000 -c 100 http://localhost:8080/` realizamos 10000 peticiones al microservicio que se ejecuta en el contenedor, con un máximo de 100 concurrentes. Los resultados que obtenemos son los siguientes:
+
+```
+REPOSITORY        REQUESTS PER SECOND     TIME PER REQUEST    TOTAL TIME
+gmicro-buster     13862.57                7.214 ms            0.721 s
+gmicro-stretch    13213.79                7.568 ms            0.757 s
+gmicro-alpine     14071.55                7.107 ms            0.711 s
+```
+
+Alpine también gana en rendimiento a las otras dos opciones. Es por ello que la elegimos como imagen base para la imagen de nuestro microservicio.
+
+## __Actualización:__ construcción multifase
 
 Al ser Go un lenguaje compilado, podemos aplicar una estrategia de construcción multifase para reducir el tamaño de la imagen al mínimo. La idea es compilar la aplicación en un contenedor y copiar el binario obtenido a otro contenedor, que contendrá solo este binario.
 
@@ -123,4 +149,4 @@ Esta sería la imagen "real" que se utiliza para lanzar la aplicación conteneri
 
 Lo único que se hace en esta imagen es copiar el binario de la imagen de construcción con `COPY --from=build` y definir dicho binario como `ENTRYPOINT` para que se ejecute al lanzar el contenedor.
 
-Usando esta técnica conseguimos reducir el tamaño de la imagen de `gmicro` a 8.53MB, una tamaño sumamente inferior al que teníamos antes.
+Usando esta técnica conseguimos reducir el tamaño de la imagen de `gmicro` de los 787MB que teníamos antes a tan solo 8.53MB.
