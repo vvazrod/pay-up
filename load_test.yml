@@ -1,0 +1,23 @@
+execution:
+  - scenario: gmicro
+    concurrency: 10
+    ramp-up: 10s
+    hold-for: 50s
+    
+scenarios:
+  gmicro:
+    variables:
+      id: ${__UUID}
+
+    requests:
+      - once:
+        - label: Create group
+          url: http://localhost:8080/groups
+          method: POST
+          headers:
+            Content-Type: application/json
+          body: '{"id":"${id}", "name":"test"}'
+
+      - label: Fetch group
+        url: http://localhost:8080/groups/${id}
+        method: GET
