@@ -1,3 +1,7 @@
+# This docker-compose file is meant to be used only
+# for container deployment during development.
+#
+# DO NOT USE IN PRODUCTION
 version: "3.7"
 
 services: 
