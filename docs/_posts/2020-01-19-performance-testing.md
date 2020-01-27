@@ -7,11 +7,7 @@ El sistema desarrollado debe estar preparado para soportar una determinada carga
 
 Para la comprobación de las prestaciones, se va a trabajar solo con `gmicro` y el `gateway`, ya que las peticiones destinadas a `tmicro` no dan una respuesta al usuario después de ser procesadas, si no que es el `gateway` el que devuelve una respuesta de operación aceptada al comprobar que su formato es correcto.
 
-Taurus nos permite definir la configuración de las pruebas de prestaciones en un fichero YAML.
-
-> Prestaciones: load_test.yml
-
-Vamos a presentar este fichero y explicar por partes su composición.
+Taurus nos permite definir la configuración de las pruebas de prestaciones en un fichero YAML. Vamos a presentar este fichero y explicar por partes su composición.
 
 ```yaml
 execution:

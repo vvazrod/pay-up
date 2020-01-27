@@ -18,6 +18,14 @@ Para facilitar el despliegue de los distintos servicios en cualquier plataforma,
 
 > Contenedor: https://hub.docker.com/r/varrrro/pay-up
 
+## Evaluación de prestaciones
+
+Se han realizado pruebas de carga sobre el sistema usando [Taurus](https://gettaurus.org/) para evaluar su nivel de prestaciones. El archivo de evaluación es el siguiente:
+
+> Prestaciones: load_test.yml
+
+Puede leer más sobre estas pruebas [aquí](https://varrrro.github.io/pay-up/2020/01/19/performance-testing.html).
+
 ## Despliegue local
 
 Puede desplegar el sistema en su ordenador usando Vagrant y Ansible con los siguientes comandos (__Nota:__ Tanto Vagrant como Ansible deben estar instalados en su ordenador):
