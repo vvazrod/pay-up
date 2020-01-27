@@ -35,5 +35,5 @@ LABEL maintainer="Víctor Vázquez <victorvazrod@correo.ugr.es>"
 WORKDIR /app
 
 # Copy binary from build stage
-COPY --from=build /usr/local/bin/gateway /app/
+COPY --from=build /src/gateway /app/
 ENTRYPOINT ./gateway

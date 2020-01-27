@@ -34,5 +34,5 @@ LABEL maintainer="Víctor Vázquez <victorvazrod@correo.ugr.es>"
 WORKDIR /app
 
 # Copy binary from build stage
-COPY --from=build /usr/local/bin/tmicro /app/
+COPY --from=build /src/tmicro /app/
 ENTRYPOINT ./tmicro
