@@ -1,0 +1,20 @@
+---
+- hosts: gateway
+  become: yes
+  vars_files:
+    - env/gateway.yml    
+  roles:
+    - common
+  tasks:
+    - name: Run gateway container
+      docker_container:
+        name: gateway
+        image: varrrro/pay-up:gateway
+        detach: yes
+        ports:
+          - "8080:8080"
+        env:
+          RABBIT_CONN: "{{ rabbit_conn }}"
+          PROXY_URL: "{{ proxy_url }}"
+          EXCHANGE: "{{ exchange }}"
+          KEY: "{{ key }}"

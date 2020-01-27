@@ -1,0 +1,41 @@
+---
+- hosts: tmicro
+  become: yes
+  vars_files:
+    - env/tmicro.yml
+  roles:
+    - common
+  tasks:
+    - name: Create docker network
+      docker_network:
+        name: main
+
+    - name: Run PostgreSQL container
+      docker_container:
+        name: db-tmicro
+        image: postgres:12
+        detach: yes
+        networks:
+          - name: main
+        purge_networks: yes
+        env:
+          POSTGRES_USER: "{{ db_user }}"
+          POSTGRES_PASSWORD: "{{ db_pass }}"
+          POSTGRES_DB: "{{ db_name }}"
+
+    - name: Run tmicro container
+      docker_container:
+        name: tmicro
+        image: varrrro/pay-up:tmicro
+        detach: yes
+        networks:
+          - name: main
+        purge_networks: yes
+        env:
+          RABBIT_CONN: "{{ rabbit_conn }}"
+          DB_TYPE: "{{ db_type }}"
+          DB_CONN: "{{ db_conn }}"
+          EXCHANGE: "{{ exchange }}"
+          KEY: "{{ key }}"
+          QUEUE: "{{ queue }}"
+          CTAG: "{{ ctag }}"

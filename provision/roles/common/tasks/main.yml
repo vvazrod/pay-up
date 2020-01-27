@@ -1,0 +1,15 @@
+---
+- name: Install docker
+  include_role:
+    name: geerlingguy.docker
+  vars:
+    docker_install_compose: false
+
+- name: Install pip3
+  apt:
+    pkg: python3-pip
+    update_cache: yes
+
+- name: Install docker module
+  pip:
+    name: docker

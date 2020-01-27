@@ -1,0 +1,53 @@
+---
+- hosts: gmicro
+  become: yes
+  vars_files:
+    - env/gmicro.yml
+  roles:
+    - common
+  tasks:
+    - name: Create docker network
+      docker_network:
+        name: main
+
+    - name: Run RabbitMQ container
+      docker_container:
+        name: rabbit
+        image: rabbitmq:3
+        detach: yes
+        networks:
+          - name: main
+        purge_networks: yes
+        ports:
+          - "5672:5672"
+
+    - name: Run PostgreSQL container
+      docker_container:
+        name: db-gmicro
+        image: postgres:12
+        detach: yes
+        networks:
+          - name: main
+        purge_networks: yes
+        env:
+          POSTGRES_USER: "{{ db_user }}"
+          POSTGRES_PASSWORD: "{{ db_pass }}"
+          POSTGRES_DB: "{{ db_name }}"
+
+    - name: Run gmicro container
+      docker_container:
+        name: gmicro
+        image: varrrro/pay-up:gmicro
+        detach: yes
+        networks:
+          - name: main
+        purge_networks: yes
+        ports:
+          - "8080:8080"
+        env:
+          RABBIT_CONN: "{{ rabbit_conn }}"
+          DB_TYPE: "{{ db_type }}"
+          DB_CONN: "{{ db_conn }}"
+          EXCHANGE: "{{ exchange }}"
+          QUEUE: "{{ queue }}"
+          CTAG: "{{ ctag }}"
