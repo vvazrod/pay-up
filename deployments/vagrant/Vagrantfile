@@ -2,32 +2,22 @@
 # system's three microservices.
 Vagrant.configure("2") do |config|
 
-  # VM for the API gateway and AMQP queue.
-  config.vm.define "gateway" do |gateway|
-    gateway.vm.box = "ubuntu/bionic64"
-
-    # Port 8080 is used for API access and 5672 for queue access.
-    gateway.vm.network "forwarded_port", guest: 8080, host: 8080
-    gateway.vm.network "forwarded_port", guest: 5672, host: 5672
-
-    # Use VirtualBox to create this VM with 1 core and 2GB of RAM.
-    gateway.vm.provider "virtualbox" do |vb|
-      vb.cpus = 1
-      vb.memory = "2048"
-    end
-  end
-
-  # VM for the gmicro microservice and its database.
+  # VM for the gmicro microservice, its database and the AMQP queue.
   config.vm.define "gmicro" do |gmicro|
     gmicro.vm.box = "ubuntu/bionic64"
 
-    # Forwards port 6060 for API access.
-    gmicro.vm.network "forwarded_port", guest: 8080, host: 6060
+    # Set private static IP address.
+    gmicro.vm.network "private_network", ip: "10.0.0.10"
 
     # Use VirtualBox to create this VM with 2 cores and 4GB of RAM.
     gmicro.vm.provider "virtualbox" do |vb|
       vb.cpus = 2
       vb.memory = "4096"
+    end
+
+    # Provision VM with Ansible.
+    gmicro.vm.provision "ansible" do |ansible|
+      ansible.playbook = "../../provision/gmicro.yml"
     end
   end
 
@@ -35,10 +25,40 @@ Vagrant.configure("2") do |config|
   config.vm.define "tmicro" do |tmicro|
     tmicro.vm.box = "ubuntu/bionic64"
 
+    # Set private IP address using DHCP.
+    tmicro.vm.network "private_network", type: "dhcp"
+
     # Use VirtualBox to create this VM with 2 cores and 4GB of RAM.
     tmicro.vm.provider "virtualbox" do |vb|
       vb.cpus = 2
       vb.memory = "4096"
+    end
+
+    # Provision VM with Ansible.
+    tmicro.vm.provision "ansible" do |ansible|
+      ansible.playbook = "../../provision/tmicro.yml"
+    end
+  end
+
+  # VM for the API gateway.
+  config.vm.define "gateway" do |gateway|
+    gateway.vm.box = "ubuntu/bionic64"
+
+    # Set private IP address using DHCP.
+    gateway.vm.network "private_network", type: "dhcp"
+
+    # Forward port to access system from host.
+    gateway.vm.network "forwarded_port", guest: 8080, host: 8080 
+
+    # Use VirtualBox to create this VM with 1 core and 2GB of RAM.
+    gateway.vm.provider "virtualbox" do |vb|
+      vb.cpus = 1
+      vb.memory = "2048"
+    end
+
+    # Provision VM with Ansible.
+    gateway.vm.provision "ansible" do |ansible|
+      ansible.playbook = "../../provision/gateway.yml"
     end
   end
 end
