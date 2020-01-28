@@ -26,14 +26,29 @@ Se han realizado pruebas de carga sobre el sistema usando [Taurus](https://getta
 
 Puede leer más sobre estas pruebas [aquí](https://varrrro.github.io/pay-up/2020/01/19/performance-testing.html).
 
-## Despliegue local
+## Despliegue
 
-Puede desplegar el sistema en su ordenador usando Vagrant y Ansible con los siguientes comandos (__Nota:__ Tanto Vagrant como Ansible deben estar instalados en su ordenador):
+Puede desplegar el sistema en su ordenador usando Vagrant y Ansible con los siguientes comandos (__Nota:__ Vagrant, VirtualBox y Ansible deben estar instalados en su ordenador):
 
 ```bash
 cd deployments/vagrant
 vagrant up
 ```
 
-* Más información sobre el despliegue local con Vagrant [aquí](https://varrrro.github.io/pay-up/2020/01/27/local-deployment.html).
-* Más información sobre el provisionamiento de las máquinas virtuales con Ansible [aquí](https://varrrro.github.io/pay-up/2020/01/27/provisioning.html).
+Por otra parte, también puede desplegar el sistema en _Google Cloud Platform_ añadiendo un fichero `credentials.json` al directorio `deployments/ansible/gcp` con los datos de acceso de una cuenta de servicio a un proyecto en GCP. También debe incluir el usuario de su clave SSH (`ssh_user`) y su contraseña (`ssh_pass`) en un fichero `ssh_credentials.json` ubicado en `deployments/ansible/env/`. Una vez hecho esto, use los siguientes comandos:
+
+```bash
+cd deployments/ansible/gcp
+ansible-playbook deploy.yml
+```
+
+Ó, si está usando Python 3:
+
+```bash
+cd deployments/ansible/gcp
+ansible-playbook deploy.yml -e'ansible_python_interpreter=/usr/bin/python3'
+```
+
+Tanto si va a realizar el despliegue en local como en remoto, debe añadir también a la carpeta `provision/env` los ficheros `gateway.yml`, `gmicro.yml` y `tmicro.yml` con las variables de entorno necesarias para cada servicio.
+
+Puede obtener más información sobre el despliegue y provisionamiento de máquinas virtuales [aquí](https://varrrro.github.io/pay-up/2020/01/27/deployment-and-provisioning.html).
