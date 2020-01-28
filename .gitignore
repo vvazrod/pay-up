@@ -25,3 +25,6 @@ coverage.txt
 
 # Environment variables folder
 env/
+
+# Cloud credentials file
+credentials.json
