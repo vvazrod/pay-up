@@ -1,0 +1,246 @@
+---
+- name: Create GCP infrastructure
+  hosts: localhost
+  gather_facts: no
+
+  vars_files:
+    - ../env/ssh_credentials.yml
+
+  vars:
+    service_account_file: ./credentials.json
+    project: payup-2020
+    auth_kind: serviceaccount
+    region: "europe-west1"
+    zone: "europe-west1-b"
+    scopes:
+      - https://www.googleapis.com/auth/compute
+
+  tasks:
+    - name: Create network
+      gcp_compute_network:
+        name: "payup-net"
+        auto_create_subnetworks: no
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: network
+
+    - name: Create firewall
+      gcp_compute_firewall:
+        name: "payup-firewall"
+        allowed:
+        - ip_protocol: tcp
+          ports:
+          - "22"
+          - "8080"
+          - "5672"
+        network: "{{ network }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+
+    - name: Create subnet
+      gcp_compute_subnetwork:
+        name: "payup-subnet-eu"
+        region: "{{ region }}"
+        network: "{{ network }}"
+        ip_cidr_range: 10.0.0.0/8
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: subnet
+
+    - name: Reserve static internal IP address for gmicro
+      gcp_compute_address:
+        name: "gmicro-internal-ip"
+        address: 10.0.0.10
+        address_type: "INTERNAL"
+        subnetwork: "{{ subnet }}"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gmicro_internal_ip
+
+    - name: Reserve external IP address for gmicro
+      gcp_compute_address:
+        name: "gmicro-external-ip"
+        address_type: "EXTERNAL"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gmicro_external_ip
+
+    - name: Reserve external IP address for tmicro
+      gcp_compute_address:
+        name: "tmicro-external-ip"
+        address_type: "EXTERNAL"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: tmicro_external_ip
+
+    - name: Reserve external IP address for gateway
+      gcp_compute_address:
+        name: "gateway-external-ip"
+        address_type: "EXTERNAL"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gateway_external_ip
+
+    - name: Create disk for gmicro
+      gcp_compute_disk:
+        name: "gmicro-disk"
+        size_gb: 50
+        source_image: projects/ubuntu-os-cloud/global/images/ubuntu-1804-bionic-v20200108
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gmicro_disk
+
+    - name: Create disk for tmicro
+      gcp_compute_disk:
+        name: "tmicro-disk"
+        size_gb: 50
+        source_image: projects/ubuntu-os-cloud/global/images/ubuntu-1804-bionic-v20200108
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: tmicro_disk
+
+    - name: Create disk for gateway
+      gcp_compute_disk:
+        name: "gateway-disk"
+        size_gb: 10
+        source_image: projects/ubuntu-os-cloud/global/images/ubuntu-1804-bionic-v20200108
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gateway_disk
+
+    - name: Create gmicro VM
+      gcp_compute_instance:
+        name: "gmicro-vm"
+        machine_type: n1-standard-1
+        disks:
+          - auto_delete: true
+            boot: true
+            source: "{{ gmicro_disk }}"
+        network_interfaces:
+          - network: "{{ network }}"
+            subnetwork: "{{ subnet }}"
+            network_ip: "{{ gmicro_internal_ip.address }}"
+            access_configs:
+            - name: External NAT
+              nat_ip: "{{ gmicro_external_ip }}"
+              type: ONE_TO_ONE_NAT
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gmicro_vm
+
+    - name: Create tmicro VM
+      gcp_compute_instance:
+        name: "tmicro-vm"
+        machine_type: n1-standard-1
+        disks:
+          - auto_delete: true
+            boot: true
+            source: "{{ tmicro_disk }}"
+        network_interfaces:
+          - network: "{{ network }}"
+            subnetwork: "{{ subnet }}"
+            access_configs:
+            - name: External NAT
+              nat_ip: "{{ tmicro_external_ip }}"
+              type: ONE_TO_ONE_NAT
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: tmicro_vm
+
+    - name: Create gateway VM
+      gcp_compute_instance:
+        name: "gateway-vm"
+        machine_type: n1-standard-1
+        disks:
+          - auto_delete: true
+            boot: true
+            source: "{{ gateway_disk }}"
+        network_interfaces:
+          - network: "{{ network }}"
+            subnetwork: "{{ subnet }}"
+            access_configs:
+            - name: External NAT
+              nat_ip: "{{ gateway_external_ip }}"
+              type: ONE_TO_ONE_NAT
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        scopes: "{{ scopes }}"
+      register: gateway_vm
+
+    - name: Wait for SSH to come up on gmicro VM
+      wait_for: host={{ gmicro_external_ip.address }} port=22 delay=10 timeout=60
+
+    - name: Wait for SSH to come up on tmicro VM
+      wait_for: host={{ tmicro_external_ip.address }} port=22 delay=10 timeout=60
+
+    - name: Wait for SSH to come up on gateway VM
+      wait_for: host={{ gateway_external_ip.address }} port=22 delay=10 timeout=60
+
+    - name: Add gmicro host
+      add_host:
+        hostname: "{{ gmicro_external_ip.address }}"
+        groupname: gmicro
+        ansible_user: "{{ ssh_user }}"
+        ansible_password: "{{ ssh_pass }}"
+
+    - name: Add tmicro host
+      add_host: 
+        hostname: "{{ tmicro_external_ip.address }}"
+        groupname: tmicro
+        ansible_user: "{{ ssh_user }}"
+        ansible_password: "{{ ssh_pass }}"
+
+    - name: Add gateway host
+      add_host: 
+        hostname: "{{ gateway_external_ip.address }}"
+        groupname: gateway
+        ansible_user: "{{ ssh_user }}"
+        ansible_password: "{{ ssh_pass }}"
+
+    - name: Show gateway public IP
+      debug:
+        msg: "Gateway's public IP is {{ gateway_external_ip.address }}"
+
+- name: Provision gmicro VM
+  import_playbook: ../../../provision/gmicro.yml
+
+- name: Provision tmicro VM
+  import_playbook: ../../../provision/tmicro.yml
+
+- name: Provision gateway VM
+  import_playbook: ../../../provision/gateway.yml

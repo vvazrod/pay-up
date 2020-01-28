@@ -1,0 +1,113 @@
+---
+- name: Remove GCP infrastructure
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    service_account_file: ./credentials.json
+    project: payup-2020
+    auth_kind: serviceaccount
+    region: "europe-west1"
+    zone: "europe-west1-b"
+    scopes:
+      - https://www.googleapis.com/auth/compute
+
+  tasks:
+    - name: Remove gateway VM
+      gcp_compute_instance:
+        name: "gateway-vm"
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove tmicro VM
+      gcp_compute_instance:
+        name: "tmicro-vm"
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove gmicro VM
+      gcp_compute_instance:
+        name: "gmicro-vm"
+        zone: "{{ zone }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove external IP address for gateway
+      gcp_compute_address:
+        name: "gateway-external-ip"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove external IP address for tmicro
+      gcp_compute_address:
+        name: "tmicro-external-ip"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove external IP address for gmicro
+      gcp_compute_address:
+        name: "gmicro-external-ip"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove static internal IP address for gmicro
+      gcp_compute_address:
+        name: "gmicro-internal-ip"
+        region: "{{ region }}"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Retrieve network
+      gcp_compute_network_info:
+        filters:
+        - name = payup-net
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+      register: network
+
+    - name: Remove subnet
+      gcp_compute_subnetwork:
+        name: "payup-subnet-eu"
+        region: "{{ region }}"
+        network: "{{ network }}"
+        ip_cidr_range: 10.0.0.0/16
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove firewall
+      gcp_compute_firewall:
+        name: "payup-firewall"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
+
+    - name: Remove network
+      gcp_compute_network:
+        name: "payup-net"
+        project: "{{ project }}"
+        auth_kind: "{{ auth_kind }}"
+        service_account_file: "{{ service_account_file }}"
+        state: absent
