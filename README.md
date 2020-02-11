@@ -8,7 +8,7 @@
 
 PayUp is a distributed system for managing payments and debts in a group. Create groups of people and start adding expenses, the system will calculate the balance of each member of the group so you don't have to.
 
-You can find more info about the project and the technologies used in the [documentation](https://varrrro.github.io/pay-up/) (which is entirely in spanish, sorry friends :sweat_smile:)
+You can find more info about the project and the technologies used in the [documentation](https://varrrro.github.io/pay-up/) (which is entirely in spanish, sorry friends :sweat_smile:).
 
 ## Running the system
 
