@@ -1,3 +1,4 @@
+# Load test using Taurus
 execution:
   - scenario: gmicro
     concurrency: 10
